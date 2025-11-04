@@ -1,4 +1,4 @@
-import { ChartData, MermaidRenderer } from "@markdown-confluence/lib";
+import { ChartData, MermaidRenderer } from "md-confluence-lib";
 import path from "path";
 import puppeteer, { PuppeteerLaunchOptions } from "puppeteer";
 import { downloadBrowser } from "puppeteer/lib/esm/puppeteer/node/install.js";

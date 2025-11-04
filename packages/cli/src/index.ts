@@ -12,8 +12,8 @@ import {
 	Publisher,
 	Puller,
 	MermaidRendererPlugin,
-} from "@markdown-confluence/lib";
-import { PuppeteerMermaidRenderer } from "@markdown-confluence/mermaid-puppeteer-renderer";
+} from "md-confluence-lib";
+import { PuppeteerMermaidRenderer } from "md-confluence-mermaid-puppeteer-renderer";
 import { ConfluenceClient } from "confluence.js";
 
 // Setup common dependencies

@@ -7,7 +7,7 @@ import {
 	AuthenticationService,
 } from "confluence.js";
 import { requestUrl } from "obsidian";
-import { RequiredConfluenceClient } from "@markdown-confluence/lib";
+import { RequiredConfluenceClient } from "md-confluence-lib";
 
 const ATLASSIAN_TOKEN_CHECK_FLAG = "X-Atlassian-Token";
 const ATLASSIAN_TOKEN_CHECK_NOCHECK_VALUE = "no-check";

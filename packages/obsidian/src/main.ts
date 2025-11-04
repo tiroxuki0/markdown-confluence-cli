@@ -7,8 +7,8 @@ import {
 	renderADFDoc,
 	MermaidRendererPlugin,
 	UploadAdfFileResult,
-} from "@markdown-confluence/lib";
-import { ElectronMermaidRenderer } from "@markdown-confluence/mermaid-electron-renderer";
+} from "md-confluence-lib";
+import { ElectronMermaidRenderer } from "md-confluence-mermaid-electron-renderer";
 import { ConfluenceSettingTab } from "./ConfluenceSettingTab";
 import ObsidianAdaptor from "./adaptors/obsidian";
 import { CompletedModal } from "./CompletedModal";

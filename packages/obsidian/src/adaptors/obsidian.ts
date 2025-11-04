@@ -6,7 +6,7 @@ import {
 	LoaderAdaptor,
 	MarkdownFile,
 	ConfluencePageConfig,
-} from "@markdown-confluence/lib";
+} from "md-confluence-lib";
 import { lookup } from "mime-types";
 
 export default class ObsidianAdaptor implements LoaderAdaptor {

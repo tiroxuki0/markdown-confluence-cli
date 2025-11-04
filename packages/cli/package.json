@@ -1,6 +1,6 @@
 {
     "name": "md-confluence-cli",
-    "version": "1.0.2",
+    "version": "5.6.0",
     "description": "This CLI allows you to publish your notes to Confluence",
     "bin": "dist/index.js",
     "scripts": {
@@ -19,8 +19,8 @@
         "confluence.js": "^1.6.3",
         "boxen": "7.1.1",
         "chalk": "5.3.0",
-        "@markdown-confluence/lib": "5.5.2",
-        "@markdown-confluence/mermaid-puppeteer-renderer": "5.5.2"
+        "md-confluence-lib": "5.6.0",
+        "md-confluence-mermaid-puppeteer-renderer": "5.6.0"
     },
     "dependencies": {
         "yargs": "^17.7.2"
