@@ -1,6 +1,6 @@
 {
-    "name": "@markdown-confluence/cli",
-    "version": "5.5.2",
+    "name": "md-confluence-cli",
+    "version": "1.0.1",
     "description": "This CLI allows you to publish your notes to Confluence",
     "bin": "dist/index.js",
     "scripts": {
