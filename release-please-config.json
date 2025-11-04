@@ -1,0 +1,55 @@
+{
+      "release-type": "node",     
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance Improvements"},
+        {"type": "deps", "section": "Dependencies"},
+        {"type": "revert", "section": "Reverts"},
+        {"type": "docs", "section": "Documentation"},
+        {"type": "test", "section": "Tests"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "style", "section": "Styles", "hidden": true},
+        {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
+        {"type": "build", "section": "Build System", "hidden": true},
+        {"type": "ci", "section": "Continuous Integration", "hidden": true}
+      ],
+    "packages": {
+      "packages/obsidian": {
+        "component": "obsidian-confluence"
+      },
+      "packages/lib": {
+        "component": "@markdown-confluence/lib"
+      },
+      "packages/mermaid-electron-renderer": {
+        "component": "@markdown-confluence/mermaid-electron-renderer"
+      },
+      "packages/cli": {
+        "component": "@markdown-confluence/cli"
+      },
+      "packages/mermaid-puppeteer-renderer": {
+        "component": "@markdown-confluence/mermaid-puppeteer-renderer"
+      },
+      ".": {
+        "component": "obsidian-confluence-root",
+        "extra-files": [
+            {
+                "type": "json",
+                "path": "manifest.json",
+                "jsonpath": "$.version"
+              }
+        ]
+      }
+    },
+  "plugins": [
+    {
+      "type": "node-workspace",
+      "merge": false
+    },
+    {
+      "type": "linked-versions",
+      "groupName": "obsidian packages",
+      "components": ["obsidian-confluence", "obsidian-confluence-root", "@markdown-confluence/lib", "@markdown-confluence/mermaid-electron-renderer", "@markdown-confluence/cli", "@markdown-confluence/mermaid-puppeteer-renderer"]
+    }
+  ]
+}

@@ -1,0 +1,1454 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`parses blockquotes.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/blockquotes.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "text": "Blockquote example",
+                "type": "text",
+              },
+            ],
+            "type": "paragraph",
+          },
+        ],
+        "type": "blockquote",
+      },
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "text": "Another blockquote example",
+                "type": "text",
+              },
+            ],
+            "type": "paragraph",
+          },
+        ],
+        "type": "blockquote",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "blockquotes.md",
+  "folderName": "blockquotes",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating blockquotes.",
+    "title": "Blockquotes",
+  },
+  "pageId": undefined,
+  "pageTitle": "Blockquotes",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses blog.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/blog.md",
+  "blogPostDate": "2022-01-01",
+  "contentType": "blogpost",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "level": 1,
+        },
+        "content": [
+          {
+            "text": "Header 1",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 2,
+        },
+        "content": [
+          {
+            "text": "Header 2",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 3,
+        },
+        "content": [
+          {
+            "text": "Header 3",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 4,
+        },
+        "content": [
+          {
+            "text": "Header 4",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 5,
+        },
+        "content": [
+          {
+            "text": "Header 5",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 6,
+        },
+        "content": [
+          {
+            "text": "Header 6",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "blog.md",
+  "folderName": "blog",
+  "frontmatter": {
+    "connie-blog-post-date": "2022-01-01",
+  },
+  "pageId": undefined,
+  "pageTitle": "Blog",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses code.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/code.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "text": "Inline ",
+            "type": "text",
+          },
+          {
+            "marks": [
+              {
+                "type": "code",
+              },
+            ],
+            "text": "code",
+            "type": "text",
+          },
+          {
+            "text": " example",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "text": "Code block example",
+            "type": "text",
+          },
+        ],
+        "type": "codeBlock",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "code.md",
+  "folderName": "code",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating inline code and code blocks.",
+    "title": "Code",
+  },
+  "pageId": undefined,
+  "pageTitle": "Code",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses emphasis.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/emphasis.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "em",
+              },
+            ],
+            "text": "Italic text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "em",
+              },
+            ],
+            "text": "Italic text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "strong",
+              },
+            ],
+            "text": "Bold text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "strong",
+              },
+            ],
+            "text": "Bold text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "em",
+              },
+              {
+                "type": "strong",
+              },
+            ],
+            "text": "Bold and italic text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "type": "em",
+              },
+              {
+                "type": "strong",
+              },
+            ],
+            "text": "Bold and italic text",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "emphasis.md",
+  "folderName": "emphasis",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating different text emphasis styles.",
+    "title": "Emphasis",
+  },
+  "pageId": undefined,
+  "pageTitle": "Emphasis",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses escaping.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/escaping.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "text": "*Escape asterisks*",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "text": "[Escape brackets]",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "escaping.md",
+  "folderName": "escaping",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating how to escape special characters.",
+    "title": "Escaping",
+  },
+  "pageId": undefined,
+  "pageTitle": "Escaping",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses file1.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/folder1/file1.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "layout": "default",
+        },
+        "content": [
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Key",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Value",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+            ],
+            "type": "tableRow",
+          },
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "author",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": ""John Doe"",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+            ],
+            "type": "tableRow",
+          },
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "date",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": ""2023-04-14"",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+            ],
+            "type": "tableRow",
+          },
+        ],
+        "type": "table",
+      },
+      {
+        "attrs": {
+          "level": 1,
+        },
+        "content": [
+          {
+            "text": "Test Content",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "content": [
+          {
+            "text": "Hello, World!",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": true,
+  "fileName": "file1.md",
+  "folderName": "folder1",
+  "frontmatter": {
+    "author": "John Doe",
+    "connie-dont-change-parent-page": true,
+    "connie-frontmatter-to-publish": [
+      "author",
+      "date",
+    ],
+    "connie-page-id": "12345",
+    "connie-title": "Custom Title",
+    "date": "2023-04-14",
+    "tags": [
+      "test",
+      "example",
+    ],
+  },
+  "pageId": "12345",
+  "pageTitle": "Custom Title",
+  "publish": false,
+  "tags": [
+    "test",
+    "example",
+  ],
+}
+`;
+
+exports[`parses file2.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/folder2/file2.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "layout": "default",
+        },
+        "content": [
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Key",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Value",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+            ],
+            "type": "tableRow",
+          },
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "project",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": ""Project Name"",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+            ],
+            "type": "tableRow",
+          },
+        ],
+        "type": "table",
+      },
+      {
+        "attrs": {
+          "level": 2,
+        },
+        "content": [
+          {
+            "text": "Another Test",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "content": [
+          {
+            "text": "This is another test.",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "file2.md",
+  "folderName": "folder2",
+  "frontmatter": {
+    "connie-dont-change-parent-page": false,
+    "connie-frontmatter-to-publish": [
+      "project",
+    ],
+    "connie-page-id": 67890,
+    "connie-title": "Another Custom Title",
+    "project": "Project Name",
+    "tags": [
+      "demo",
+      42,
+    ],
+  },
+  "pageId": "67890",
+  "pageTitle": "Another Custom Title",
+  "publish": false,
+  "tags": [
+    "demo",
+  ],
+}
+`;
+
+exports[`parses file3.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/folder3/file3.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "layout": "default",
+        },
+        "content": [
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Key",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Value",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+            ],
+            "type": "tableRow",
+          },
+        ],
+        "type": "table",
+      },
+      {
+        "attrs": {
+          "level": 3,
+        },
+        "content": [
+          {
+            "text": "Third Test",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "content": [
+          {
+            "text": "Yet another test content.",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "file3.md",
+  "folderName": "folder3",
+  "frontmatter": {
+    "connie-dont-change-parent-page": "invalid",
+    "connie-frontmatter-to-publish": [],
+    "connie-page-id": "qwerty",
+    "connie-title": 98765,
+    "tags": [
+      "sample",
+      "test",
+    ],
+  },
+  "pageId": "qwerty",
+  "pageTitle": "Third Test Page",
+  "publish": false,
+  "tags": [
+    "sample",
+    "test",
+  ],
+}
+`;
+
+exports[`parses headers.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/headers.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "level": 1,
+        },
+        "content": [
+          {
+            "text": "Header 1",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 2,
+        },
+        "content": [
+          {
+            "text": "Header 2",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 3,
+        },
+        "content": [
+          {
+            "text": "Header 3",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 4,
+        },
+        "content": [
+          {
+            "text": "Header 4",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 5,
+        },
+        "content": [
+          {
+            "text": "Header 5",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+      {
+        "attrs": {
+          "level": 6,
+        },
+        "content": [
+          {
+            "text": "Header 6",
+            "type": "text",
+          },
+        ],
+        "type": "heading",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "headers.md",
+  "folderName": "headers",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating different header levels.",
+    "title": "Headers",
+  },
+  "pageId": undefined,
+  "pageTitle": "Headers",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses horizontal_rules.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/horizontal_rules.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "type": "rule",
+      },
+      {
+        "type": "rule",
+      },
+      {
+        "type": "rule",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "horizontal_rules.md",
+  "folderName": "horizontal_rules",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating different horizontal rule styles.",
+    "title": "Horizontal Rules",
+  },
+  "pageId": undefined,
+  "pageTitle": "Horizontal Rules",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses images.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/images.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "layout": "center",
+        },
+        "content": [
+          {
+            "attrs": {
+              "collection": "",
+              "id": "",
+              "type": "file",
+              "url": "file:///path/to/image.jpg",
+            },
+            "type": "media",
+          },
+        ],
+        "type": "mediaSingle",
+      },
+      {
+        "attrs": {
+          "layout": "center",
+        },
+        "content": [
+          {
+            "attrs": {
+              "collection": "",
+              "id": "",
+              "type": "file",
+              "url": "file:///path/to/image.jpg",
+            },
+            "type": "media",
+          },
+        ],
+        "type": "mediaSingle",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "images.md",
+  "folderName": "images",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating different image styles.",
+    "title": "Images",
+  },
+  "pageId": undefined,
+  "pageTitle": "Images",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses inline_html.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/inline_html.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "text": "<p>Paragraph with <strong>bold</strong> and <em>italic</em> text.</p>",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "inline_html.md",
+  "folderName": "inline_html",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating the use of inline HTML.",
+    "title": "Inline HTML",
+  },
+  "pageId": undefined,
+  "pageTitle": "Inline HTML",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses links.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/links.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Example link",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Example link with title",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "links.md",
+  "folderName": "links",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating different link styles.",
+    "title": "Links",
+  },
+  "pageId": undefined,
+  "pageTitle": "Links",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses lists.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/lists.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "order": 1,
+        },
+        "content": [
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "First ordered list item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "Second ordered list item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+        ],
+        "type": "orderedList",
+      },
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "Unordered list item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "Another unordered list item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+        ],
+        "type": "bulletList",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "lists.md",
+  "folderName": "lists",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating ordered and unordered lists.",
+    "title": "Lists",
+  },
+  "pageId": undefined,
+  "pageTitle": "Lists",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses tables.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/tables.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "attrs": {
+          "layout": "default",
+        },
+        "content": [
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Header 1",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Header 2",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableHeader",
+              },
+            ],
+            "type": "tableRow",
+          },
+          {
+            "content": [
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Cell 1",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+              {
+                "attrs": {
+                  "colspan": 1,
+                  "colwidth": [
+                    340,
+                  ],
+                  "rowspan": 1,
+                },
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Cell 2",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "type": "tableCell",
+              },
+            ],
+            "type": "tableRow",
+          },
+        ],
+        "type": "table",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "tables.md",
+  "folderName": "tables",
+  "frontmatter": {
+    "description": "A Markdown file demonstrating tables.",
+    "title": "Tables",
+  },
+  "pageId": undefined,
+  "pageTitle": "Tables",
+  "publish": false,
+  "tags": [],
+}
+`;
+
+exports[`parses tasks.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/tasks.md",
+  "blogPostDate": "2022-01-01",
+  "contentType": "blogpost",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "Regular list item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "🔲 Unchecked item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "✅ Checked item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "⭐️ Starred item",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+          {
+            "content": [
+              {
+                "content": [
+                  {
+                    "text": "No checkbox [x] in the middle",
+                    "type": "text",
+                  },
+                ],
+                "type": "paragraph",
+              },
+            ],
+            "type": "listItem",
+          },
+        ],
+        "type": "bulletList",
+      },
+      {
+        "content": [
+          {
+            "text": "[x] non list item shouldn't get checkbox",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "tasks.md",
+  "folderName": "tasks",
+  "frontmatter": {
+    "connie-blog-post-date": "2022-01-01",
+  },
+  "pageId": undefined,
+  "pageTitle": "Tasks",
+  "publish": false,
+  "tags": [],
+}
+`;
