@@ -1,6 +1,6 @@
 {
     "name": "md-confluence-cli",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "This CLI allows you to publish your notes to Confluence",
     "bin": "dist/index.js",
     "scripts": {
