@@ -63,7 +63,7 @@ async function handlePublish(publishFilter: string = "") {
 		]);
 
 		const results = await publisher.publish(publishFilter);
-		results.forEach((file) => {
+		results.forEach((file: any) => {
 			if (file.successfulUploadResult) {
 				console.log(
 					chalk.green(
@@ -133,7 +133,7 @@ async function handlePullTree(rootPageId: string, options: any) {
 		let successCount = 0;
 		let failCount = 0;
 
-		results.forEach((result) => {
+		results.forEach((result: any) => {
 			if (result.success) {
 				console.log(
 					chalk.green(

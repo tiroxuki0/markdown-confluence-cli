@@ -24,7 +24,9 @@ export function renderADFDoc(adfDoc: JSONDocNode) {
 		[] as (string | Error)[],
 	);
 	const result = lines.join("\n");
-	return result;
+	// Fix double pipe issue: if a line starts with "||" (with optional whitespace), remove one pipe
+	// This happens when table rows are joined incorrectly
+	return result.replace(/^(\s*)\|\|/gm, "$1|");
 }
 
 function renderTextMarks(element: ADFEntity) {
@@ -216,7 +218,9 @@ function renderADFContent(
 			return `[${inlineCardUrl}](${inlineCardUrl})`;
 		}
 		case "table": {
-			return renderTable(element);
+			const tableResult = renderTable(element);
+			// Ensure table is properly formatted with newlines
+			return tableResult ? "\n" + tableResult + "\n" : "";
 		}
 		case "tableHeader":
 		case "tableRow":
@@ -229,34 +233,49 @@ function renderADFContent(
 	}
 }
 
-function renderTable(element: ADFEntity) {
-	if (!element.content) {
-		return "";
-	}
-
-	const tableCells: string[][] = [];
-
-	// TODO: Handle alignment
-	for (const tableRow of element.content) {
-		if (!tableRow || !tableRow.content) {
-			continue;
+	function renderTable(element: ADFEntity) {
+		if (!element.content) {
+			return "";
 		}
 
-		const rowCells: string[] = [];
-		for (const tableCell of tableRow.content) {
-			if (!tableCell || !tableCell.content) {
+		const tableCells: string[][] = [];
+
+		// TODO: Handle alignment
+		for (const tableRow of element.content) {
+			if (!tableRow || !tableRow.content) {
 				continue;
 			}
-			const cellContent = renderChildren(tableCell);
-			if (typeof cellContent === "string") {
-				rowCells.push(cellContent);
+
+			const rowCells: string[] = [];
+			for (const tableCell of tableRow.content) {
+				if (!tableCell) {
+					// Empty cell - add empty string to maintain table structure
+					rowCells.push("");
+					continue;
+				}
+				if (!tableCell.content || tableCell.content.length === 0) {
+					// Cell with no content - add empty string
+					rowCells.push("");
+					continue;
+				}
+				const cellContent = renderChildren(tableCell);
+				if (typeof cellContent === "string") {
+					// Trim whitespace and normalize empty strings
+					const trimmed = cellContent.trim();
+					rowCells.push(trimmed);
+				} else {
+					// If renderChildren returns Error or undefined, add empty string
+					rowCells.push("");
+				}
+			}
+			// Only add row if it has cells (to avoid completely empty rows)
+			if (rowCells.length > 0) {
+				tableCells.push(rowCells);
 			}
 		}
-		tableCells.push(rowCells);
-	}
 
-	return markdownTable(tableCells);
-}
+		return markdownTable(tableCells);
+	}
 
 function renderCodeBlock(language: string, code: string) {
 	return `\`\`\`${language} \n${code}\n\`\`\``;

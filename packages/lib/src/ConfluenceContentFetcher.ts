@@ -59,27 +59,55 @@ export class ConfluenceContentFetcher {
 	 */
 	async fetchChildren(parentId: string, options: FetchChildrenOptions = {}): Promise<ConfluencePageData[]> {
 		const {
-			limit = 50, // Confluence API default limit
-			start = 0,
 			expand = ["version", "space"],
-			retryAttempts: _retryAttempts = this.defaultRetryAttempts,
-			retryDelay: _retryDelay = this.defaultRetryDelay,
+			retryAttempts = this.defaultRetryAttempts,
+			retryDelay = this.defaultRetryDelay,
 		} = options;
 
-		try {
-			const response = await this.confluenceClient.content.getContent({
-				type: "page",
-				spaceKey: "", // Will be set by caller or use default space
-				expand: expand.join(","),
-				limit,
-				start,
-			});
+		let lastError: Error | null = null;
 
-			return (response as any).results as ConfluencePageData[];
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			throw new Error(`Failed to fetch children for page ${parentId}: ${errorMessage}`);
+		for (let attempt = 0; attempt <= retryAttempts; attempt++) {
+			try {
+				// Use expand method directly - more reliable than CQL
+				const parentPageWithChildren = await this.fetchPage(parentId, {
+					expand: ["children.page", "version", "space"],
+				});
+
+				if (!parentPageWithChildren.children?.page?.results || parentPageWithChildren.children.page.results.length === 0) {
+					return [];
+				}
+
+				const childIds = parentPageWithChildren.children.page.results.map((child: any) => child.id);
+				const allChildren: ConfluencePageData[] = [];
+				
+				// Fetch full details for each child in batches
+				const batchSize = 10;
+				for (let i = 0; i < childIds.length; i += batchSize) {
+					const batch = childIds.slice(i, i + batchSize);
+					const childPromises = batch.map((childId: string) =>
+						this.fetchPage(childId, { expand: expand })
+					);
+					const batchResults = await Promise.all(childPromises);
+					allChildren.push(...batchResults);
+				}
+
+				// Warn if there might be more children (expand method has 25 limit)
+				if (childIds.length >= 25 && (parentPageWithChildren.children.page as any)._links?.next) {
+					console.warn(`Page ${parentId} may have more than ${childIds.length} children. Some may be missing due to API pagination limits.`);
+				}
+
+				return allChildren;
+			} catch (error) {
+				lastError = error instanceof Error ? error : new Error(String(error));
+
+				if (attempt < retryAttempts) {
+					console.warn(`Failed to fetch children for page ${parentId} (attempt ${attempt + 1}/${retryAttempts + 1}):`, lastError.message);
+					await this.delay(retryDelay * Math.pow(2, attempt)); // Exponential backoff
+				}
+			}
 		}
+
+		throw new Error(`Failed to fetch children for page ${parentId} after ${retryAttempts + 1} attempts: ${lastError?.message}`);
 	}
 
 	/**

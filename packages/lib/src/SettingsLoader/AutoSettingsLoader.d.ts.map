@@ -1,0 +1,1 @@
+{"version":3,"file":"AutoSettingsLoader.d.ts","sourceRoot":"","sources":["AutoSettingsLoader.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,kBAAkB,EAAoB,MAAM,aAAa,CAAC;AAKnE,OAAO,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAElD,qBAAa,kBAAmB,SAAQ,cAAc;IACzC,OAAO,CAAC,OAAO;gBAAP,OAAO,GAAE,cAAc,EAAO;IAWlD,OAAO,CAAC,eAAe;IA8BvB,WAAW,IAAI,OAAO,CAAC,kBAAkB,CAAC;CAG1C"}

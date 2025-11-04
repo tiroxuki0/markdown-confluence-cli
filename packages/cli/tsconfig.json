@@ -2,12 +2,15 @@
   "extends": "../../tsconfig.json",
   "compilerOptions":{
      "baseUrl":".",
-     "rootDir": "src",
          "outDir": "dist",
          "declarationDir": "dist",
          "emitDeclarationOnly": true,
-         "skipLibCheck": true
+         "skipLibCheck": true,
+         "paths": {
+           "md-confluence-lib": ["../lib/dist"],
+           "md-confluence-mermaid-puppeteer-renderer": ["../mermaid-puppeteer-renderer/dist"]
+         }
   },
-  "include":[ "**/*.ts", "**/*.tsx" ],
+  "include":[ "src/**/*.ts", "src/**/*.tsx" ],
     "exclude": ["node_modules", "packages/**/dist/*", "dist/*", "**/*.test.ts", "**/jest.config.ts"]
 }

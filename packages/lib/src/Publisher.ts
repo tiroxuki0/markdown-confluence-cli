@@ -133,7 +133,15 @@ export class Publisher {
 
 		const spaceToPublishTo = parentPage.space;
 
-		const files = await this.adaptor.getMarkdownFilesToUpload();
+		let files = await this.adaptor.getMarkdownFilesToUpload();
+		
+		// Apply filter BEFORE building tree to avoid checking unrelated files
+		if (publishFilter) {
+			files = files.filter(
+				(file) => file.absoluteFilePath === publishFilter || file.absoluteFilePath.startsWith(publishFilter + "/"),
+			);
+		}
+		
 		const folderTree = createLocalAdfTree(files, settings);
 		let confluencePagesToPublish = await ensureAllFilesExistInConfluence(
 			this.confluenceClient,
@@ -145,6 +153,7 @@ export class Publisher {
 			settings,
 		);
 
+		// Additional filter after tree building (for exact match)
 		if (publishFilter) {
 			confluencePagesToPublish = confluencePagesToPublish.filter(
 				(file) => file.file.absoluteFilePath === publishFilter,
@@ -197,10 +206,33 @@ export class Publisher {
 		adfFile: ConfluenceAdfFile,
 		lastUpdatedBy: string,
 	): Promise<UploadAdfFileResult> {
+		// Check version conflict - but allow update if page was pulled (has pageId from frontmatter)
+		// In that case, we'll use the current version from Confluence instead of blocking
 		if (lastUpdatedBy !== this.myAccountId) {
-			throw new Error(
-				`Page last updated by another user. Won't publish over their changes. MyAccountId: ${this.myAccountId}, Last Updated By: ${lastUpdatedBy}`,
-			);
+			// If page was pulled, fetch current version and use it instead of blocking
+			if (adfFile.pageId) {
+				try {
+					const currentPage = await this.confluenceClient.content.getContentById({
+						id: adfFile.pageId,
+						expand: ["version"],
+					});
+					// Use current version from Confluence (may have been updated by another user)
+					pageVersionNumber = currentPage.version?.number ?? pageVersionNumber;
+					console.warn(
+						`Warning: Page ${adfFile.pageTitle} was updated by another user (${lastUpdatedBy}). Using current version ${pageVersionNumber} to update.`
+					);
+				} catch (error) {
+					// If fetch fails, still block to prevent overwriting
+					throw new Error(
+						`Page last updated by another user. Won't publish over their changes. MyAccountId: ${this.myAccountId}, Last Updated By: ${lastUpdatedBy}`,
+					);
+				}
+			} else {
+				// No pageId - this is a new page or page not found, block update
+				throw new Error(
+					`Page last updated by another user. Won't publish over their changes. MyAccountId: ${this.myAccountId}, Last Updated By: ${lastUpdatedBy}`,
+				);
+			}
 		}
 		if (existingPageData.contentType !== adfFile.contentType) {
 			throw new Error(
@@ -283,8 +315,10 @@ export class Publisher {
 				: { ancestors: existingPageData.ancestors }),
 		};
 
+		// Use existing page title from Confluence to avoid "title already exists" errors
+		// when updating pages that were pulled from Confluence
 		const newPageDetails = {
-			title: adfFile.pageTitle,
+			title: existingPageData.pageTitle,
 			type: adfFile.contentType,
 			...(adfFile.contentType === "blogpost" ||
 			adfFile.dontChangeParentPageId

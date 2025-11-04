@@ -1,0 +1,1 @@
+{"version":3,"file":"StaticSettingsLoader.d.ts","sourceRoot":"","sources":["StaticSettingsLoader.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,kBAAkB,EAAE,MAAM,aAAa,CAAC;AACjD,OAAO,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAElD,qBAAa,oBAAqB,SAAQ,cAAc;IAC3C,OAAO,CAAC,QAAQ;gBAAR,QAAQ,EAAE,OAAO,CAAC,kBAAkB,CAAC;IAIzD,WAAW,IAAI,OAAO,CAAC,kBAAkB,CAAC;CAG1C"}

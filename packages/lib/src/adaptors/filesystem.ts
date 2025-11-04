@@ -106,7 +106,18 @@ export class FileSystemAdaptor implements LoaderAdaptor {
 		const fileName = path.basename(absoluteFilePath);
 
 		const extension = path.extname(fileName);
-		const pageTitle = path.basename(fileName, extension);
+		let pageTitle = path.basename(fileName, extension);
+
+		// If file is "index.md", use frontmatter title or folder name as page title
+		if (pageTitle.toLowerCase() === "index") {
+			// Prefer frontmatter title if available
+			if (data && typeof data["title"] === "string" && data["title"].trim()) {
+				pageTitle = data["title"];
+			} else if (folderName && folderName !== "." && folderName !== path.basename(this.settings.contentRoot)) {
+				// Fallback to folder name
+				pageTitle = folderName;
+			}
+		}
 
 		return {
 			folderName,

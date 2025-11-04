@@ -35,7 +35,9 @@ export class MarkdownFileGenerator {
 	async generateFile(
 		page: ConfluencePageData,
 		markdown: string,
-		options: FileGenerationOptions = {}
+		options: FileGenerationOptions = {},
+		pageHierarchy?: Map<string, { title: string; id: string }>, // Map of pageId -> {title, id} for hierarchy
+		hasChildren: boolean = false // Whether this page has children
 	): Promise<FileGenerationResult> {
 		try {
 			const {
@@ -51,9 +53,44 @@ export class MarkdownFileGenerator {
 				fs.mkdirSync(outputDir, { recursive: true });
 			}
 
+			// Build folder path based on ancestors/hierarchy
+			let folderPath = outputDir;
+			if (pageHierarchy && page.ancestors && page.ancestors.length > 0) {
+				// Build path from ancestors
+				const ancestorFolders: string[] = [];
+				for (const ancestor of page.ancestors) {
+					const ancestorInfo = pageHierarchy.get(ancestor.id);
+					if (ancestorInfo) {
+						const folderName = this.sanitizeFileName(ancestorInfo.title);
+						ancestorFolders.push(folderName);
+					}
+				}
+				if (ancestorFolders.length > 0) {
+					folderPath = path.join(outputDir, ...ancestorFolders);
+					// Create nested directories
+					if (createDirectories && !fs.existsSync(folderPath)) {
+						fs.mkdirSync(folderPath, { recursive: true });
+					}
+				}
+			}
+
 			// Generate filename
-			const fileName = this.generateFileName(page, fileNameTemplate);
-			const filePath = path.join(outputDir, fileName);
+			// If page has children, create index.md in its own folder
+			let fileName: string;
+			if (hasChildren) {
+				// Create folder for this page and use index.md
+				const pageFolderName = this.sanitizeFileName(page.title);
+				const pageFolderPath = path.join(folderPath, pageFolderName);
+				if (createDirectories && !fs.existsSync(pageFolderPath)) {
+					fs.mkdirSync(pageFolderPath, { recursive: true });
+				}
+				folderPath = pageFolderPath;
+				fileName = "index.md";
+			} else {
+				// Regular file in parent folder
+				fileName = this.generateFileName(page, fileNameTemplate);
+			}
+			const filePath = path.join(folderPath, fileName);
 
 			// Check if file exists
 			const fileExists = fs.existsSync(filePath);

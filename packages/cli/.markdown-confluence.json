@@ -1,0 +1,7 @@
+{
+  "confluenceBaseUrl": "https://s5philippines.atlassian.net",
+  "confluenceParentId": "46923777",
+  "folderToPublish": "docs",
+  "atlassianUserName": "huy.vo@cubicstack.net",
+  "contentRoot": "."
+}

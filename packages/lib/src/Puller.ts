@@ -130,22 +130,79 @@ export class Puller {
 				return results;
 			}
 
-			// Pull root page first
-			const rootResult = await this.pullSinglePage(rootPageId, options);
-			results.push(rootResult);
+			// Get all pages in tree first to build hierarchy info
+			const allPages = await this.contentFetcher.fetchPageTree(rootPageId, options.maxDepth || 10); // Use configurable max depth with fallback
 
-			if (!rootResult.success || !options.includeChildren) {
-				return results;
+			// Build page hierarchy map for nested folder structure
+			const pageHierarchy = new Map<string, { title: string; id: string }>();
+			const pagesWithChildren = new Set<string>(); // Track which pages have children
+			
+			for (const page of allPages) {
+				pageHierarchy.set(page.id, { title: page.title, id: page.id });
+				// Check if this page has children by looking at ancestors of other pages
+				if (page.ancestors && page.ancestors.length > 0) {
+					// This page is a child, so its parent has children
+					const lastAncestor = page.ancestors[page.ancestors.length - 1];
+					if (lastAncestor && lastAncestor.id) {
+						pagesWithChildren.add(lastAncestor.id);
+					}
+				}
 			}
 
-			// Get all pages in tree using ConfluenceContentFetcher
-			const allPages = await this.contentFetcher.fetchPageTree(rootPageId, options.maxDepth || 10); // Use configurable max depth with fallback
+			// Pull root page with hierarchy info
+			const rootPage = allPages.find(p => p.id === rootPageId);
+			if (rootPage) {
+				const rootMarkdown = this.convertPageToMarkdown(rootPage);
+				const rootHasChildren = pagesWithChildren.has(rootPageId);
+				const rootFileResult = await this.fileGenerator.generateFile(rootPage, rootMarkdown, options, pageHierarchy, rootHasChildren);
+				
+				if (!rootFileResult.success) {
+					results.push({
+						success: false,
+						pageId: rootPageId,
+						pageTitle: rootPage.title,
+						filePath: undefined,
+						error: rootFileResult.error,
+					});
+				} else {
+					results.push({
+						success: true,
+						pageId: rootPageId,
+						pageTitle: rootPage.title,
+						filePath: rootFileResult.filePath,
+						error: undefined,
+					});
+				}
+			}
+
+			if (!options.includeChildren) {
+				return results;
+			}
 
 			// Skip root page (already processed) and pull all descendants
 			for (const page of allPages) {
 				if (page.id !== rootPageId) {
-					const pageResult = await this.pullSinglePage(page.id, options);
-					results.push(pageResult);
+					const markdown = this.convertPageToMarkdown(page);
+					const hasChildren = pagesWithChildren.has(page.id);
+					const fileResult = await this.fileGenerator.generateFile(page, markdown, options, pageHierarchy, hasChildren);
+					
+					if (!fileResult.success) {
+						results.push({
+							success: false,
+							pageId: page.id,
+							pageTitle: page.title,
+							filePath: undefined,
+							error: fileResult.error,
+						});
+					} else {
+						results.push({
+							success: true,
+							pageId: page.id,
+							pageTitle: page.title,
+							filePath: fileResult.filePath,
+							error: undefined,
+						});
+					}
 				}
 			}
 		} catch (error) {
@@ -176,32 +233,84 @@ export class Puller {
 	 * Convert Confluence page to Markdown
 	 */
 	private convertPageToMarkdown(page: ConfluencePageData): string {
-		let markdown = `# ${page.title}\n\n`;
+		// Don't add title here - ADF content already contains headings
+		// Title is stored in frontmatter and can be used separately
+		let markdown = "";
 
 		if (page.body?.atlas_doc_format?.value) {
 			try {
 				const adf = JSON.parse(page.body.atlas_doc_format.value) as JSONDocNode;
 				const contentMarkdown = renderADFDoc(adf);
-				markdown += contentMarkdown;
+				// Remove duplicate headings that match page title (normalized)
+				markdown += this.removeDuplicateTitleHeadings(contentMarkdown, page.title);
 			} catch (error) {
 				markdown += "*Error converting page content*\n";
 			}
+		} else {
+			// If no content, add title as heading
+			markdown = `# ${page.title}\n\n`;
 		}
 
-		// Add frontmatter
-		const frontmatter = {
-			pageId: page.id,
-			spaceKey: page.space.key,
-			version: page.version.number,
-			lastUpdated: page.version.by.accountId,
-			pulled: true,
+		// Note: Frontmatter is added by MarkdownFileGenerator.generateFile()
+		// to ensure proper formatting and include all metadata (title, confluenceUrl, etc.)
+		return markdown;
+	}
+
+	/**
+	 * Remove duplicate headings that match page title (case-insensitive, normalized)
+	 * Also removes consecutive duplicate headings of the same level
+	 */
+	private removeDuplicateTitleHeadings(markdown: string, pageTitle: string): string {
+		// Normalize page title for comparison (lowercase, replace underscores/spaces, remove special chars)
+		const normalizeTitle = (text: string): string => {
+			return text
+				.toLowerCase()
+				.replace(/_/g, " ") // Replace underscores with spaces
+				.replace(/[^a-z0-9\s]/g, "") // Remove special chars
+				.replace(/\s+/g, " ") // Normalize multiple spaces to single space
+				.trim();
 		};
 
-		const frontmatterStr = Object.entries(frontmatter)
-			.map(([key, value]) => `${key}: ${value}`)
-			.join("\n");
+		const normalizedPageTitle = normalizeTitle(pageTitle);
+		const lines = markdown.split("\n");
+		const result: string[] = [];
+		let lastHeadingLevel = 0;
+		let lastHeadingText = "";
 
-		return `---\n${frontmatterStr}\n---\n\n${markdown}`;
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line === undefined) {
+				result.push("");
+				continue;
+			}
+			const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+
+			if (headingMatch) {
+				const headingLevel = headingMatch[1]?.length ?? 0;
+				const headingText = headingMatch[2]?.trim() ?? "";
+				const normalizedHeadingText = normalizeTitle(headingText);
+
+				// Skip if heading matches page title (case-insensitive, normalized)
+				if (normalizedHeadingText === normalizedPageTitle) {
+					continue;
+				}
+
+				// Skip if it's a duplicate of the previous heading (same level and text)
+				if (
+					headingLevel === lastHeadingLevel &&
+					normalizedHeadingText === normalizeTitle(lastHeadingText)
+				) {
+					continue;
+				}
+
+				lastHeadingLevel = headingLevel;
+				lastHeadingText = headingText;
+			}
+
+			result.push(line);
+		}
+
+		return result.join("\n");
 	}
 
 

@@ -88,16 +88,21 @@ async function createFileStructureInConfluence(
 	let lastUpdatedBy: string | undefined;
 	const file: ConfluenceAdfFile = {
 		...node.file,
-		pageId: parentPageId,
+		pageId: node.file.pageId || parentPageId, // Use file's pageId if exists, otherwise use parentPageId
 		spaceKey,
 		pageUrl: "",
 	};
 
 	if (createPage) {
+		// Use file (which has pageId preserved) instead of node.file for ensurePageExists
+		const fileToCheck: LocalAdfFile = {
+			...node.file,
+			pageId: file.pageId, // Use preserved pageId from file
+		};
 		const pageDetails = await ensurePageExists(
 			confluenceClient,
 			adaptor,
-			node.file,
+			fileToCheck,
 			spaceKey,
 			parentPageId,
 			topPageId,
@@ -157,6 +162,7 @@ async function ensurePageExists(
 	topPageId: string,
 ) {
 	if (file.pageId) {
+		// Try to fetch by ID first
 		try {
 			const contentById = await confluenceClient.content.getContentById({
 				id: file.pageId,
@@ -170,6 +176,22 @@ async function ensurePageExists(
 
 			if (!contentById.space?.key) {
 				throw new Error("Missing Space Key");
+			}
+
+			// If pageId matches topPageId, it's the root page - skip ancestor check
+			// Otherwise, verify the page is in the correct tree
+			// Convert to string for comparison to handle number/string mismatches
+			const filePageIdStr = String(file.pageId);
+			const topPageIdStr = String(topPageId);
+			
+			if (filePageIdStr !== topPageIdStr && file.contentType === "page") {
+				const isInTree = String(contentById.id) === topPageIdStr ||
+					contentById.ancestors?.some((ancestor) => String(ancestor.id) === topPageIdStr);
+				if (!isInTree) {
+					throw new Error(
+						`${file.pageTitle} (pageId: ${file.pageId}) is outside the page tree from the selected top page (${topPageId})`,
+					);
+				}
 			}
 
 			await adaptor.updateMarkdownValues(file.absoluteFilePath, {
@@ -202,13 +224,16 @@ async function ensurePageExists(
 				typeof error.response.status === "number" &&
 				error.response.status === 404
 			) {
+				// Page not found by ID - clear pageId and fall through to search by title
 				await adaptor.updateMarkdownValues(file.absoluteFilePath, {
 					publish: false,
 					pageId: undefined,
 				});
+				// Continue to search by title instead of throwing
+			} else {
+				// For other errors, rethrow
+				throw error;
 			}
-
-			throw error;
 		}
 	}
 
@@ -225,10 +250,22 @@ async function ensurePageExists(
 	const currentPage = contentByTitle.results[0];
 
 	if (currentPage) {
-		if (
-			file.contentType === "page" &&
-			!currentPage.ancestors?.some((ancestor) => ancestor.id == topPageId)
-		) {
+		// If file has pageId from frontmatter, verify it matches the found page
+		if (file.pageId && String(currentPage.id) !== String(file.pageId)) {
+			// Page found by title doesn't match pageId from frontmatter - this could cause conflicts
+			// Try to find the correct page by ID first
+			throw new Error(
+				`Page "${file.pageTitle}" found by title (ID: ${currentPage.id}) doesn't match pageId from frontmatter (${file.pageId}). There may be multiple pages with the same title.`,
+			);
+		}
+
+		// Check if this is the root page or if it's in the tree
+		const topPageIdStr = String(topPageId);
+		const isRootPage = String(currentPage.id) === topPageIdStr;
+		const isInTree = isRootPage || 
+			currentPage.ancestors?.some((ancestor) => String(ancestor.id) === topPageIdStr);
+		
+		if (file.contentType === "page" && !isInTree) {
 			throw new Error(
 				`${file.pageTitle} is trying to overwrite a page outside the page tree from the selected top page`,
 			);
@@ -254,6 +291,7 @@ async function ensurePageExists(
 			contentType: currentPage.type,
 		} as const;
 	} else {
+		// No page found by ID or title - create new page
 		const creatingBlankPageRequest = {
 			space: { key: spaceKey },
 			...(file.contentType === "page"

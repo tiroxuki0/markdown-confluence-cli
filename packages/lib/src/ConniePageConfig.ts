@@ -213,12 +213,18 @@ export const conniePerPageConfig: ConfluencePerPageConfig = {
 				],
 			};
 		},
-		process: (yamlValue) => {
+		process: (yamlValue, markdownFile) => {
+			// First try connie-page-id, then fallback to pageId (for backward compatibility and pulled pages)
+			let pageIdValue = yamlValue;
+			if (pageIdValue === undefined && markdownFile.frontmatter) {
+				pageIdValue = markdownFile.frontmatter["pageId"];
+			}
+			
 			let pageId: string | undefined;
-			switch (typeof yamlValue) {
+			switch (typeof pageIdValue) {
 				case "string":
 				case "number":
-					pageId = yamlValue.toString();
+					pageId = pageIdValue.toString();
 					break;
 				default:
 					pageId = undefined;
@@ -352,7 +358,13 @@ export function processConniePerPageConfig(
 			key,
 			alwaysProcess,
 		} = config[propertyKey as keyof ConfluencePerPageConfig];
-		if (key in markdownFile.frontmatter || alwaysProcess) {
+		
+		// Special handling for pageId: also check for "pageId" key (for pulled pages)
+		const shouldProcess = alwaysProcess || 
+			key in markdownFile.frontmatter ||
+			(propertyKey === "pageId" && "pageId" in markdownFile.frontmatter);
+		
+		if (shouldProcess) {
 			const frontmatterValue = markdownFile.frontmatter[key];
 			result[propertyKey as keyof ConfluencePerPageValues] = process(
 				frontmatterValue as never,
@@ -397,7 +409,7 @@ function validateDate(dateString: string): ValidationResult {
 	// Regular expression to check the format: YYYY-MM-DD
 	const regex = /^\d{4}-\d{2}-\d{2}$/;
 
-	if (!regex.test(dateString)) {
+	if (!dateString || typeof dateString !== "string" || !regex.test(dateString)) {
 		reasons.push("Invalid format");
 	} else {
 		const parts = dateString.split("-");

@@ -31,6 +31,9 @@ export const ImageUploaderPlugin: ADFProcessingPlugin<
 		let imageMap: Record<string, UploadedImageData | null> = {};
 
 		for (const imageUrl of imagesToUpload.values()) {
+			if (!imageUrl || typeof imageUrl !== "string") {
+				continue;
+			}
 			const filename = imageUrl.split("://")[1];
 			if (!filename) {
 				continue;

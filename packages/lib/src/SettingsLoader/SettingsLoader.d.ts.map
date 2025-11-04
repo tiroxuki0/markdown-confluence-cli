@@ -1,0 +1,1 @@
+{"version":3,"file":"SettingsLoader.d.ts","sourceRoot":"","sources":["SettingsLoader.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,kBAAkB,EAAE,MAAM,aAAa,CAAC;AAEjD,8BAAsB,cAAc;IACnC,QAAQ,CAAC,WAAW,IAAI,OAAO,CAAC,kBAAkB,CAAC;IAEnD,IAAI,IAAI,kBAAkB;IAM1B,SAAS,CAAC,gBAAgB,CACzB,QAAQ,EAAE,OAAO,CAAC,kBAAkB,CAAC,GACnC,kBAAkB;CAmCrB"}
