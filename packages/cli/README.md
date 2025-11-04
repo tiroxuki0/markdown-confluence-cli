@@ -2,6 +2,40 @@
 
 `md-confluence-cli` is a powerful tool that allows you to publish your markdown files as Confluence pages. It is designed to work seamlessly in various environments, including NPM CLI, Docker Container, and GitHub Actions, enabling you to use your docs wherever you need them. Comprehensive documentation for the tool can be found at [https://markdown-confluence.com/](https://markdown-confluence.com/).
 
+## Pull Commands
+
+Pull pages from Confluence to your local machine as markdown files.
+
+### Pull a Single Page
+
+```bash
+# Pull a specific page by ID
+npx md-confluence-cli@latest pull 123456789
+
+# Pull to a specific directory
+npx md-confluence-cli@latest pull 123456789 --output ./docs
+```
+
+### Pull a Page Tree (Recursive)
+
+```bash
+# Pull a page and all its children recursively
+npx md-confluence-cli@latest pull 123456789 --recursive
+
+# Limit recursion depth (default: 10)
+npx md-confluence-cli@latest pull 123456789 --recursive --max-depth 5
+```
+
+### Additional Options
+
+```bash
+# Overwrite existing files
+npx md-confluence-cli@latest pull 123 --overwrite
+
+# Custom filename template
+npx md-confluence-cli@latest pull 123 --file-name-template "{id}_{title}.md"
+```
+
 ## Usage Examples
 
 ### CLI

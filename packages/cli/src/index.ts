@@ -91,7 +91,7 @@ async function handlePullPage(pageId: string, options: any) {
 
 		const puller = new Puller(confluenceClient, settings);
 		const result = await puller.pullSinglePage(pageId, {
-			outputDir: options.outputDir,
+			outputDir: options.output || options.outputDir, // Support both --output and --output-dir
 			overwriteExisting: options.overwrite,
 			fileNameTemplate: options.fileNameTemplate,
 		});
@@ -123,10 +123,11 @@ async function handlePullTree(rootPageId: string, options: any) {
 
 		const puller = new Puller(confluenceClient, settings);
 		const results = await puller.pullPageTree(rootPageId, {
-			outputDir: options.outputDir,
+			outputDir: options.output || options.outputDir, // Support both --output and --output-dir
 			overwriteExisting: options.overwrite,
 			includeChildren: true,
 			fileNameTemplate: options.fileNameTemplate,
+			maxDepth: options.maxDepth, // Pass configurable max depth
 		});
 
 		let successCount = 0;
@@ -184,8 +185,56 @@ yargs(hideBin(process.argv))
 		},
 	)
 	.command(
+		"pull <pageId>",
+		"Pull pages from Confluence to markdown",
+		(yargs) => {
+			yargs
+				.positional("pageId", {
+					type: "string",
+					demandOption: true,
+					describe: "Confluence page ID to pull",
+				})
+				.option("output", {
+					alias: "o",
+					type: "string",
+					default: "./pulled-pages",
+					describe: "Output directory for markdown files",
+				})
+				.option("recursive", {
+					alias: "r",
+					type: "boolean",
+					default: false,
+					describe: "Pull page and all children recursively",
+				})
+				.option("max-depth", {
+					type: "number",
+					default: 10,
+					describe: "Maximum recursion depth (default: 10)",
+				})
+				.option("overwrite", {
+					alias: "w",
+					type: "boolean",
+					default: false,
+					describe: "Overwrite existing files",
+				})
+				.option("file-name-template", {
+					alias: "t",
+					type: "string",
+					default: "{title}.md",
+					describe: "Template for filename generation",
+				});
+		},
+		async (argv: any) => {
+			if (argv.recursive) {
+				await handlePullTree(argv.pageId, argv);
+			} else {
+				await handlePullPage(argv.pageId, argv);
+			}
+		},
+	)
+	.command(
 		"pull-page <pageId>",
-		"Pull a single page from Confluence to markdown",
+		false, // Hide from help text
 		(yargs) => {
 			yargs
 				.positional("pageId", {
@@ -213,12 +262,17 @@ yargs(hideBin(process.argv))
 				});
 		},
 		async (argv: any) => {
+			console.warn(
+				chalk.yellow(
+					"⚠️  WARNING: 'pull-page' command is deprecated. Use 'pull <pageId>' instead."
+				)
+			);
 			await handlePullPage(argv.pageId, argv);
 		},
 	)
 	.command(
 		"pull-tree <rootPageId>",
-		"Pull a page tree (page + all children) from Confluence to markdown",
+		false, // Hide from help text
 		(yargs) => {
 			yargs
 				.positional("rootPageId", {
@@ -246,6 +300,11 @@ yargs(hideBin(process.argv))
 				});
 		},
 		async (argv: any) => {
+			console.warn(
+				chalk.yellow(
+					"⚠️  WARNING: 'pull-tree' command is deprecated. Use 'pull <pageId> --recursive' instead."
+				)
+			);
 			await handlePullTree(argv.rootPageId, argv);
 		},
 	)

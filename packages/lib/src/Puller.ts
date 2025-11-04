@@ -17,6 +17,7 @@ export interface PullOptions extends FileGenerationOptions {
 	pageId?: string;
 	rootPageId?: string;
 	includeChildren?: boolean;
+	maxDepth?: number;
 }
 
 export interface ConfluencePageData {
@@ -138,7 +139,7 @@ export class Puller {
 			}
 
 			// Get all pages in tree using ConfluenceContentFetcher
-			const allPages = await this.contentFetcher.fetchPageTree(rootPageId, 10); // Max depth 10
+			const allPages = await this.contentFetcher.fetchPageTree(rootPageId, options.maxDepth || 10); // Use configurable max depth with fallback
 
 			// Skip root page (already processed) and pull all descendants
 			for (const page of allPages) {
@@ -158,6 +159,17 @@ export class Puller {
 		}
 
 		return results;
+	}
+
+	/**
+	 * Unified pull method - pulls single page or page tree based on options
+	 */
+	async pull(pageId: string, options: PullOptions = {}): Promise<PullResult | PullResult[]> {
+		if (options.includeChildren || options.maxDepth !== undefined) {
+			return await this.pullPageTree(pageId, options);
+		} else {
+			return await this.pullSinglePage(pageId, options);
+		}
 	}
 
 	/**
