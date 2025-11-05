@@ -496,7 +496,6 @@ async function handleSync(options: any) {
     }
 
     // Check if local files exist in the publish directory
-    const checkSpinner = ora("Checking local files...").start();
     let hasLocalFiles = false;
 
     try {
@@ -527,14 +526,6 @@ async function handleSync(options: any) {
       }
     } catch (error) {
       console.warn('Failed to check local files:', error);
-    }
-
-    if (options.overwrite) {
-      checkSpinner.succeed(chalk.yellow("Force overwrite mode - will pull all from Confluence"));
-    } else if (hasLocalFiles) {
-      checkSpinner.succeed(chalk.green("Found local files - will push to Confluence"));
-    } else {
-      checkSpinner.succeed(chalk.blue("No local files found - will pull from Confluence"));
     }
 
     // If setup failed, provide guidance
