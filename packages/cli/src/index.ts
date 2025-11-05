@@ -474,10 +474,28 @@ async function handlePullTree(rootPageId: string, options: any) {
 // Sync command (smart sync: pull if no local files, push if local files exist)
 async function handleSync(options: any) {
   try {
-    // First, check local files before setting up Confluence dependencies
-    const publishDir = "./docs"; // Default, will be overridden by settings if available
+    // Try to setup Confluence dependencies to get correct settings
+    let publishDir = "./docs"; // Default fallback
+    let settings = null;
+    let adaptor, settingLoader, confluenceClient, mermaidRenderer;
 
-    // Check if local files exist
+    try {
+      const deps = await setupDependencies();
+      adaptor = deps.adaptor;
+      settingLoader = deps.settingLoader;
+      confluenceClient = deps.confluenceClient;
+      mermaidRenderer = deps.mermaidRenderer;
+
+      settings = settingLoader.load();
+      publishDir = settings.folderToPublish || "./docs";
+    } catch (setupError) {
+      // If setup fails (no credentials), we can still check local files
+      // and provide helpful messaging
+      console.log(chalk.yellow("⚠️  Confluence credentials not configured"));
+      console.log(chalk.gray("   Checking local files to suggest next steps..."));
+    }
+
+    // Check if local files exist in the publish directory
     const checkSpinner = ora("Checking local files...").start();
     let hasLocalFiles = false;
 
@@ -513,25 +531,36 @@ async function handleSync(options: any) {
 
     if (options.overwrite) {
       checkSpinner.succeed(chalk.yellow("Force overwrite mode - will pull all from Confluence"));
+    } else if (hasLocalFiles) {
+      checkSpinner.succeed(chalk.green("Found local files - will push to Confluence"));
+    } else {
+      checkSpinner.succeed(chalk.blue("No local files found - will pull from Confluence"));
     }
 
-    // Now setup Confluence dependencies only if needed
-    const { adaptor, settingLoader, confluenceClient, mermaidRenderer } =
-      await setupDependencies();
-
-    const settings = settingLoader.load();
-    const actualPublishDir = settings.folderToPublish || "./docs";
+    // If setup failed, provide guidance
+    if (!settings) {
+      if (hasLocalFiles) {
+        console.log(chalk.blue("\n💡 To push your local files to Confluence:"));
+        console.log(chalk.gray("   1. Configure .markdown-confluence.json"));
+        console.log(chalk.gray("   2. Run: confluence sync"));
+      } else {
+        console.log(chalk.blue("\n💡 To pull documentation from Confluence:"));
+        console.log(chalk.gray("   1. Configure .markdown-confluence.json"));
+        console.log(chalk.gray("   2. Run: confluence sync"));
+      }
+      return; // Exit gracefully without error
+    }
 
     // Decide what to do based on local files and overwrite flag
     if (options.overwrite) {
       // Force pull all files (overwrite existing)
-      await performPull(confluenceClient, settings, options, actualPublishDir);
+      await performPull(confluenceClient, settings, options, publishDir);
     } else if (hasLocalFiles) {
       // Local files exist - only push
       await performPush(adaptor, settingLoader, confluenceClient, mermaidRenderer, options);
     } else {
       // No local files - only pull
-      await performPull(confluenceClient, settings, options, actualPublishDir);
+      await performPull(confluenceClient, settings, options, publishDir);
     }
 
   } catch (error) {

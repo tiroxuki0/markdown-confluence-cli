@@ -117,12 +117,24 @@ Smart Confluence sync complete!
 
 ### Sync Error Handling
 
-The sync command handles common Confluence scenarios:
+The sync command handles common scenarios gracefully:
 
+- **No credentials configured**: Shows helpful setup instructions instead of failing
 - **Network issues**: Retries failed operations where possible
 - **Permission errors**: Shows clear authentication error messages
 - **Missing pages**: Continues with available pages
 - **Rate limiting**: Automatically handles Confluence API limits
+
+**Example helpful guidance:**
+```
+⚠️  Confluence credentials not configured
+   Checking local files to suggest next steps...
+
+💡 To push your local files to Confluence:
+   1. Configure .markdown-confluence.json
+   2. Run: confluence sync
+✔ Found local files - will push to Confluence
+```
 
 **Example error output:**
 ```
