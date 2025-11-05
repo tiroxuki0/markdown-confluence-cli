@@ -222,11 +222,27 @@ async function handlePublish(publishFilter: string = "") {
 
     const results = await publisher.publish(publishFilter);
 
+    // Get settings and parent page info for URL logging (reuse existing dependencies)
+    const urlSettings = settingLoader.load();
+
+    // Fetch parent page to get space key for URL
+    let parentPageUrl = "";
+    try {
+      const parentPage = await confluenceClient.content.getContentById({
+        id: urlSettings.confluenceParentId,
+        expand: ["space"],
+      });
+      if (parentPage.space?.key) {
+        parentPageUrl = `${urlSettings.confluenceBaseUrl}/wiki/spaces/${parentPage.space.key}/pages/${urlSettings.confluenceParentId}`;
+      }
+    } catch (error) {
+      // If we can't fetch parent page, build URL with placeholder
+      parentPageUrl = `${urlSettings.confluenceBaseUrl}/wiki/spaces/SPACE/pages/${urlSettings.confluenceParentId}`;
+    }
+
     // For accurate counting, get the actual number of files that should be published
-    const { adaptor: countAdaptor, settingLoader: countSettingLoader } =
-      await setupDependencies();
-    const countSettings = countSettingLoader.load();
-    const allFiles = await countAdaptor.getMarkdownFilesToUpload();
+    const countSettings = settingLoader.load();
+    const allFiles = await adaptor.getMarkdownFilesToUpload();
     const totalFilesToPublish = allFiles.filter((file: any) => {
       const normalizedPath = file.absoluteFilePath.replace(/^\/+/, "");
       return (
@@ -271,6 +287,11 @@ async function handlePublish(publishFilter: string = "") {
           `\n📊 Summary: ${successCount} files published successfully, ${failCount} files failed.`,
         ),
       );
+
+      // Log parent page URL after summary
+      if (parentPageUrl) {
+        console.log(chalk.blue(`📍 Parent page: ${parentPageUrl}`));
+      }
     } else {
       console.log(
         chalk.blue(
@@ -450,6 +471,164 @@ async function handlePullTree(rootPageId: string, options: any) {
   }
 }
 
+// Sync command (pull + push)
+async function handleSync(options: any) {
+  console.log(chalk.blue("🔄 Starting sync process (pull + push)..."));
+
+  try {
+    // Step 1: Check git status
+    const statusSpinner = ora("Checking git status...").start();
+    const { execSync } = await import('child_process');
+
+    try {
+      // Check if we're in a git repository
+      execSync('git rev-parse --git-dir', { stdio: 'ignore' });
+    } catch (error) {
+      statusSpinner.fail(chalk.red("Not a git repository"));
+      console.log(chalk.yellow("💡 Tip: Initialize git repository with 'git init'"));
+      process.exit(1);
+    }
+
+    // Get current branch
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+    statusSpinner.succeed(chalk.green(`On branch: ${currentBranch}`));
+
+    // Step 2: Fetch latest changes
+    const fetchSpinner = ora("Fetching latest changes from remote...").start();
+    try {
+      execSync('git fetch --all', { stdio: 'pipe' });
+      fetchSpinner.succeed(chalk.green("Fetched latest changes"));
+    } catch (error) {
+      fetchSpinner.warn(chalk.yellow("Could not fetch (no remote configured?)"));
+    }
+
+    // Step 3: Check for remote changes
+    const pullSpinner = ora("Checking for remote changes to pull...").start();
+    let hasRemoteChanges = false;
+    let canFastForward = false;
+
+    try {
+      // Check if we can fast-forward
+      execSync('git merge-base --is-ancestor HEAD @{upstream}', { stdio: 'ignore' });
+      canFastForward = false; // We're already up to date
+    } catch (error) {
+      // We have changes to pull
+      try {
+        execSync('git diff --quiet HEAD @{upstream}', { stdio: 'ignore' });
+        canFastForward = false; // No changes
+      } catch (error) {
+        hasRemoteChanges = true;
+        canFastForward = true;
+      }
+    }
+
+    if (hasRemoteChanges && canFastForward) {
+      // Safe to pull
+      execSync('git pull --ff-only', { stdio: 'pipe' });
+      pullSpinner.succeed(chalk.green("Pulled remote changes"));
+    } else if (hasRemoteChanges) {
+      // Need to merge
+      try {
+        execSync('git pull', { stdio: 'pipe' });
+        pullSpinner.succeed(chalk.green("Merged remote changes"));
+      } catch (mergeError) {
+        pullSpinner.fail(chalk.red("Merge conflict detected"));
+        console.log(chalk.yellow("⚠️  Please resolve merge conflicts and run 'git add .' then 'git commit'"));
+        console.log(chalk.blue("💡 After resolving conflicts, run sync again to push"));
+        process.exit(1);
+      }
+    } else {
+      pullSpinner.succeed(chalk.green("Already up to date"));
+    }
+
+    // Step 4: Check for local changes to push
+    const pushSpinner = ora("Checking for local changes to push...").start();
+
+    // Check if there are any staged or unstaged changes
+    let hasChanges = false;
+    try {
+      execSync('git diff --quiet', { stdio: 'ignore' });
+    } catch (error) {
+      hasChanges = true;
+    }
+
+    let hasStagedChanges = false;
+    try {
+      execSync('git diff --cached --quiet', { stdio: 'ignore' });
+    } catch (error) {
+      hasStagedChanges = true;
+    }
+
+    if (!hasChanges && !hasStagedChanges) {
+      pushSpinner.succeed(chalk.green("No local changes to push"));
+      console.log(chalk.blue("\n✅ Sync complete: Repository is up to date"));
+      return;
+    }
+
+    // Stage all changes if requested
+    if (options.addAll && hasChanges) {
+      execSync('git add .');
+      console.log(chalk.blue("📝 Staged all changes"));
+    }
+
+    // Check if we need to commit
+    let needsCommit = false;
+    try {
+      execSync('git diff --cached --quiet', { stdio: 'ignore' });
+    } catch (error) {
+      needsCommit = true;
+    }
+
+    if (needsCommit) {
+      if (options.commitMessage) {
+        execSync(`git commit -m "${options.commitMessage}"`);
+        pushSpinner.succeed(chalk.green(`Committed changes: ${options.commitMessage}`));
+      } else {
+        pushSpinner.fail(chalk.yellow("Changes staged but no commit message provided"));
+        console.log(chalk.blue("💡 Use --commit-message to auto-commit, or commit manually"));
+        console.log(chalk.blue("💡 Then run sync again to push"));
+        process.exit(0);
+      }
+    } else {
+      pushSpinner.succeed(chalk.green("All changes committed"));
+    }
+
+    // Step 5: Push changes
+    const finalPushSpinner = ora("Pushing changes to remote...").start();
+    try {
+      execSync('git push', { stdio: 'pipe' });
+      finalPushSpinner.succeed(chalk.green("Successfully pushed changes"));
+    } catch (pushError: any) {
+      if (pushError.message.includes('non-fast-forward')) {
+        finalPushSpinner.fail(chalk.red("Push failed: Remote has changes not in local"));
+        console.log(chalk.yellow("⚠️  Run 'git pull' first to merge remote changes"));
+      } else {
+        finalPushSpinner.fail(chalk.red(`Push failed: ${pushError.message}`));
+      }
+      process.exit(1);
+    }
+
+    console.log(chalk.blue("\n✅ Sync complete: Successfully pulled and pushed all changes"));
+
+  } catch (error) {
+    console.error(
+      chalk.red(
+        boxen(
+          `Sync Error: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { padding: 1 },
+        ),
+      ),
+    );
+    console.log(chalk.yellow("💡 Common solutions:"));
+    console.log(chalk.yellow("   • Resolve merge conflicts: 'git add .' then 'git commit'"));
+    console.log(chalk.yellow("   • Set upstream: 'git push -u origin <branch>'"));
+    console.log(chalk.yellow("   • Check remote: 'git remote -v'"));
+    process.exit(1);
+  }
+}
+
 // Main CLI setup
 yargs(hideBin(process.argv))
   .scriptName("confluence")
@@ -590,6 +769,27 @@ yargs(hideBin(process.argv))
         ),
       );
       await handlePullTree(argv.rootPageId, argv);
+    },
+  )
+  .command(
+    "sync",
+    "Sync git repository: pull remote changes + push local updates",
+    (yargs) => {
+      yargs
+        .option("add-all", {
+          alias: "a",
+          type: "boolean",
+          default: false,
+          describe: "Automatically stage all changes",
+        })
+        .option("commit-message", {
+          alias: "m",
+          type: "string",
+          describe: "Commit message for auto-commit (requires --add-all)",
+        });
+    },
+    async (argv: any) => {
+      await handleSync(argv);
     },
   )
   .demandCommand(1, "You need at least one command before moving on")

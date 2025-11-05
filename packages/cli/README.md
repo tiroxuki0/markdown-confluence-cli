@@ -2,7 +2,94 @@
 
 `md-confluence-cli` is a powerful tool that allows you to publish your markdown files as Confluence pages. It is designed to work seamlessly in various environments, including NPM CLI, Docker Container, and GitHub Actions, enabling you to use your docs wherever you need them. Comprehensive documentation for the tool can be found at [https://markdown-confluence.com/](https://markdown-confluence.com/).
 
-## Pull Commands
+## Sync Command
+
+The `sync` command provides a convenient way to synchronize your git repository by pulling remote changes and pushing local updates in a single operation. This is perfect for keeping your documentation repository up to date.
+
+## Sync Features
+
+- **Automatic pull**: Fetches and merges remote changes safely
+- **Smart push**: Only pushes when you have local changes
+- **Merge conflict detection**: Handles conflicts gracefully with clear instructions
+- **Auto-commit option**: Can automatically stage and commit changes
+- **Status reporting**: Shows exactly what's happening at each step
+
+### Basic Sync
+
+Sync your repository (pull + push):
+
+```bash
+# Simple sync - only pushes if you have committed changes
+npx md-confluence-cli@latest sync
+
+# Sync with auto-commit (stages and commits all changes)
+npx md-confluence-cli@latest sync --add-all --commit-message "Update documentation"
+```
+
+### Sync Command Options
+
+| Option | Alias | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--add-all` | `-a` | boolean | `false` | Automatically stage all changes |
+| `--commit-message` | `-m` | string | - | Commit message for auto-commit (requires `--add-all`) |
+
+### Sync Process Flow
+
+The sync command follows this intelligent workflow:
+
+1. **Check git status** - Ensures you're in a git repository
+2. **Fetch latest** - Gets latest changes from remote without merging
+3. **Pull if needed** - Only pulls if there are remote changes
+4. **Check local changes** - Looks for uncommitted work
+5. **Auto-commit** - Stages and commits if requested
+6. **Push changes** - Pushes your updates to remote
+
+### Sync Examples
+
+**Example 1: Basic sync**
+```bash
+npx md-confluence-cli@latest sync
+# ✅ Sync complete: Successfully pulled and pushed all changes
+```
+
+**Example 2: Sync with auto-commit**
+```bash
+npx md-confluence-cli@latest sync --add-all --commit-message "Update API documentation"
+# 📝 Staged all changes
+# ✅ Sync complete: Successfully pulled and pushed all changes
+```
+
+**Example 3: Sync after documentation changes**
+```bash
+# Edit some markdown files...
+npx md-confluence-cli@latest sync -a -m "Add new API endpoints documentation"
+```
+
+### Sync Error Handling
+
+The sync command handles common git scenarios:
+
+- **Merge conflicts**: Shows clear instructions to resolve conflicts
+- **No remote**: Warns if no remote repository is configured
+- **Not a git repo**: Provides helpful initialization tips
+- **Push rejected**: Explains how to set upstream branch
+
+**Example error output:**
+```
+⚠️  Merge conflict detected
+💡 After resolving conflicts, run 'git add .' then 'git commit'
+💡 Then run sync again to push
+```
+
+### Sync Best Practices
+
+- **Use `--add-all`** when you want to commit all current changes
+- **Always provide commit messages** with `--commit-message` for traceability
+- **Resolve conflicts immediately** when they occur
+- **Run sync regularly** to keep repositories synchronized
+- **Check status first** if you're unsure about local changes
+
+# Pull Commands
 
 The `pull` command allows you to download Confluence pages as markdown files to your local machine. This is useful for:
 
@@ -186,6 +273,12 @@ set ATLASSIAN_API_TOKEN="YOUR API TOKEN"
 ```bash
 # Publish markdown files to Confluence (default command)
 npx md-confluence-cli
+
+# Sync git repository (pull + push)
+npx md-confluence-cli sync
+
+# Sync with auto-commit
+npx md-confluence-cli sync --add-all --commit-message "Update docs"
 
 # Pull a single page from Confluence
 npx md-confluence-cli pull <pageId>
