@@ -8,9 +8,10 @@ The `sync` command provides a convenient way to synchronize your local markdown 
 
 ## Sync Features
 
-- **Bi-directional sync**: Pulls latest from Confluence + pushes local changes
-- **Smart processing**: Only processes files that need updating
-- **Detailed reporting**: Shows exactly what was pulled and pushed
+- **Smart sync logic**: Automatically decides whether to pull or push based on local files
+- **Safe by default**: Pulls new files when starting, pushes changes when working
+- **Force overwrite**: Use `--overwrite` to force pull all files from Confluence
+- **Detailed reporting**: Shows exactly what operation was performed
 - **Error resilience**: Continues operation even if some files fail
 - **Configuration aware**: Uses your existing `.markdown-confluence.json` settings
 
@@ -39,47 +40,56 @@ npx md-confluence-cli@latest sync --overwrite --max-depth 5
 
 The sync command follows this intelligent workflow:
 
-1. **Pull from Confluence** - Downloads latest page tree from your configured parent page
-   - **Only pulls new files** by default (files that don't exist locally)
-   - Use `--overwrite` to force update all existing files
-2. **Update local files** - Creates new markdown files in your publish folder
-3. **Push to Confluence** - Publishes any local changes back to Confluence
-4. **Report results** - Shows summary of what was synchronized
+1. **Check local files** - Determines if you have existing documentation
+2. **Smart decision**:
+   - **No local files** → **Only pulls** new files from Confluence
+   - **Local files exist** → **Only pushes** local changes to Confluence
+   - **With `--overwrite`** → **Force pulls** all files (overwrites existing)
+3. **Perform operation** - Executes the chosen sync strategy
+4. **Report results** - Shows what was synchronized
 
 ### Sync Examples
 
-**Example 1: Basic sync**
+**Example 1: First time sync (no local files)**
 ```bash
 npx md-confluence-cli@latest sync
-# 📥 Step 1: Pulling latest changes from Confluence...
-# 📤 Step 2: Pushing local changes to Confluence...
-# ✅ Confluence sync complete!
+# No local files found - will pull from Confluence
+# 📥 Pulling from Confluence...
+# ✔ Pulled 5 pages from Confluence
 ```
 
-**Example 2: Force sync all files**
+**Example 2: Regular sync (with local files)**
+```bash
+npx md-confluence-cli@latest sync
+# Found local files - will push to Confluence
+# 📤 Pushing to Confluence...
+# ✔ Published 3 files to Confluence
+```
+
+**Example 3: Force refresh all files**
 ```bash
 npx md-confluence-cli@latest sync --overwrite
-# Forces update of all files from Confluence (overwrites existing)
+# Force overwrite mode - will pull all from Confluence
+# 📥 Pulling from Confluence...
+# ✔ Pulled 8 pages from Confluence (overwriting existing)
 ```
 
-**Example 3: Sync specific files only**
+**Example 4: Push specific files only**
 ```bash
 npx md-confluence-cli@latest sync --filter "api/**"
-# Only pushes files in the api/ directory
+# Found local files - will push to Confluence
+# 📤 Pushing to Confluence...
+# ✔ Published 2 files to Confluence (filtered)
 ```
 
-**Example 4: Limited depth sync**
-```bash
-npx md-confluence-cli@latest sync --max-depth 3
-# Only pulls pages up to 3 levels deep
+### Sync Output Examples
+
+**First time sync:**
 ```
-
-### Sync Output Example
-
-```
-🔄 Starting Confluence sync (pull + push)...
-
-📥 Step 1: Pulling latest changes from Confluence...
+Starting smart Confluence sync...
+- Checking local files...
+✔ No local files found - will pull from Confluence
+- Pulling from Confluence...
 ✔ Pulled 5 pages from Confluence
 
 📁 Generated file structure:
@@ -91,11 +101,18 @@ docs/
 └── guides/
     └── getting-started.md
 
-📤 Step 2: Pushing local changes to Confluence...
+Smart Confluence sync complete!
+```
+
+**Regular sync:**
+```
+Starting smart Confluence sync...
+- Checking local files...
+✔ Found local files - will push to Confluence
+- Pushing to Confluence...
 ✔ Published 2 files to Confluence
 
-✅ Confluence sync complete!
-🔄 Local files are now synchronized with Confluence
+Smart Confluence sync complete!
 ```
 
 ### Sync Error Handling
@@ -116,12 +133,12 @@ The sync command handles common Confluence scenarios:
 
 ### Sync Best Practices
 
-- **Run regularly** to keep documentation synchronized
-- **Default behavior** only pulls new files (safe for existing local work)
-- **Use `--overwrite`** when you want to force update all files from Confluence
-- **Use `--filter`** to sync specific sections of your documentation
-- **Check results** to ensure all important files were synchronized
-- **Backup important local changes** before running sync with `--overwrite`
+- **First time**: Run `sync` without options to pull initial documentation
+- **Regular workflow**: Use `sync` to push your local changes to Confluence
+- **Force refresh**: Use `sync --overwrite` when you want to reset from Confluence
+- **Selective push**: Use `sync --filter "folder/**"` to push specific sections
+- **Check results**: Always verify what operation was performed
+- **Backup before overwrite**: Save important local changes before `--overwrite`
 
 # Pull Commands
 

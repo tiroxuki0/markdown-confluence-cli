@@ -471,111 +471,68 @@ async function handlePullTree(rootPageId: string, options: any) {
   }
 }
 
-// Sync command (pull from Confluence + push to Confluence)
+// Sync command (smart sync: pull if no local files, push if local files exist)
 async function handleSync(options: any) {
-  console.log(chalk.blue("Starting Confluence sync..."));
-
   try {
+    // First, check local files before setting up Confluence dependencies
+    const publishDir = "./docs"; // Default, will be overridden by settings if available
+
+    // Check if local files exist
+    const checkSpinner = ora("Checking local files...").start();
+    let hasLocalFiles = false;
+
+    try {
+      const { existsSync, readdirSync, statSync } = await import('fs');
+      const { join } = await import('path');
+
+      if (existsSync(publishDir)) {
+        const checkDir = (dir: string): boolean => {
+          try {
+            const items = readdirSync(dir);
+            for (const item of items) {
+              const fullPath = join(dir, item);
+              const stat = statSync(fullPath);
+
+              if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
+                if (checkDir(fullPath)) return true;
+              } else if (stat.isFile() && item.endsWith('.md')) {
+                return true;
+              }
+            }
+          } catch (error) {
+            // Ignore errors for directories we can't read
+          }
+          return false;
+        };
+
+        hasLocalFiles = checkDir(publishDir);
+      }
+    } catch (error) {
+      console.warn('Failed to check local files:', error);
+    }
+
+    if (options.overwrite) {
+      checkSpinner.succeed(chalk.yellow("Force overwrite mode - will pull all from Confluence"));
+    }
+
+    // Now setup Confluence dependencies only if needed
     const { adaptor, settingLoader, confluenceClient, mermaidRenderer } =
       await setupDependencies();
 
     const settings = settingLoader.load();
+    const actualPublishDir = settings.folderToPublish || "./docs";
 
-    const pullSpinner = ora("Pulling from Confluence...").start();
-
-    try {
-      const puller = new Puller(confluenceClient, settings);
-      const pullResults = await puller.pullPageTree(settings.confluenceParentId, {
-        outputDir: settings.folderToPublish || "./docs",
-        overwriteExisting: options.overwrite || false,
-        includeChildren: true,
-        fileNameTemplate: options.fileNameTemplate || "{title}.md",
-        maxDepth: options.maxDepth || 10,
-      });
-
-      let pullSuccessCount = 0;
-      let pullFailCount = 0;
-
-      pullResults.forEach((result: any) => {
-        if (result.success) {
-          pullSuccessCount++;
-        } else {
-          pullFailCount++;
-        }
-      });
-
-      if (pullSuccessCount > 0) {
-        pullSpinner.succeed(chalk.green(`Pulled ${pullSuccessCount} pages from Confluence`));
-        if (pullSuccessCount > 0) {
-          displayNestedStructure(
-            pullResults,
-            settings.folderToPublish || "./docs",
-          );
-        }
-      } else {
-        pullSpinner.warn(chalk.yellow("No new pages to pull"));
-      }
-
-      if (pullFailCount > 0) {
-        console.log(chalk.yellow(`⚠️  ${pullFailCount} pages failed to pull`));
-      }
-
-    } catch (pullError) {
-      pullSpinner.fail(chalk.red("Failed to pull from Confluence"));
-      console.error(chalk.red(`Pull error: ${pullError instanceof Error ? pullError.message : String(pullError)}`));
-      // Continue to push step even if pull fails
+    // Decide what to do based on local files and overwrite flag
+    if (options.overwrite) {
+      // Force pull all files (overwrite existing)
+      await performPull(confluenceClient, settings, options, actualPublishDir);
+    } else if (hasLocalFiles) {
+      // Local files exist - only push
+      await performPush(adaptor, settingLoader, confluenceClient, mermaidRenderer, options);
+    } else {
+      // No local files - only pull
+      await performPull(confluenceClient, settings, options, actualPublishDir);
     }
-
-    const pushSpinner = ora("Pushing to Confluence...").start();
-
-    try {
-      const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [
-        new MermaidRendererPlugin(mermaidRenderer),
-      ]);
-
-      const pushResults = await publisher.publish(options.filter || "");
-
-      let pushSuccessCount = 0;
-      let pushFailCount = 0;
-
-      pushResults.forEach((file: any) => {
-        if (file.successfulUploadResult) {
-          pushSuccessCount++;
-        } else {
-          pushFailCount++;
-        }
-      });
-
-      if (pushSuccessCount > 0) {
-        pushSpinner.succeed(chalk.green(`Published ${pushSuccessCount} files to Confluence`));
-      } else {
-        pushSpinner.warn(chalk.yellow("No files to publish"));
-      }
-
-      if (pushFailCount > 0) {
-        console.log(chalk.yellow(`⚠️  ${pushFailCount} files failed to publish`));
-      }
-
-      // Show detailed results
-      pushResults.forEach((file: any) => {
-        if (file.successfulUploadResult) {
-          // Success - minimal logging for sync
-        } else {
-          console.error(
-            chalk.red(
-              `❌ FAILED: ${file.node.file.absoluteFilePath} - ${file.reason}`,
-            ),
-          );
-        }
-      });
-
-    } catch (pushError) {
-      pushSpinner.fail(chalk.red("Failed to push to Confluence"));
-      console.error(chalk.red(`Push error: ${pushError instanceof Error ? pushError.message : String(pushError)}`));
-      process.exit(1);
-    }
-
-    console.log(chalk.blue("Confluence sync complete!"));
 
   } catch (error) {
     console.error(
@@ -593,6 +550,101 @@ async function handleSync(options: any) {
     console.log(chalk.yellow("   • Verify network connectivity"));
     console.log(chalk.yellow("   • Check .markdown-confluence.json configuration"));
     process.exit(1);
+  }
+}
+
+// Helper function to perform pull operation
+async function performPull(confluenceClient: any, settings: any, options: any, publishDir: string) {
+  const pullSpinner = ora("Pulling from Confluence...").start();
+
+  try {
+    const puller = new Puller(confluenceClient, settings);
+    const pullResults = await puller.pullPageTree(settings.confluenceParentId, {
+      outputDir: publishDir,
+      overwriteExisting: options.overwrite || false,
+      includeChildren: true,
+      fileNameTemplate: options.fileNameTemplate || "{title}.md",
+      maxDepth: options.maxDepth || 10,
+    });
+
+    let pullSuccessCount = 0;
+    let pullFailCount = 0;
+
+    pullResults.forEach((result: any) => {
+      if (result.success) {
+        pullSuccessCount++;
+      } else {
+        pullFailCount++;
+      }
+    });
+
+    if (pullSuccessCount > 0) {
+      pullSpinner.succeed(chalk.green(`Pulled ${pullSuccessCount} pages from Confluence`));
+      displayNestedStructure(pullResults, publishDir);
+    } else {
+      pullSpinner.warn(chalk.yellow("No pages to pull"));
+    }
+
+    if (pullFailCount > 0) {
+      console.log(chalk.yellow(`⚠️  ${pullFailCount} pages failed to pull`));
+    }
+
+  } catch (pullError) {
+    pullSpinner.fail(chalk.red("Failed to pull from Confluence"));
+    console.error(chalk.red(`Pull error: ${pullError instanceof Error ? pullError.message : String(pullError)}`));
+    throw pullError;
+  }
+}
+
+// Helper function to perform push operation
+async function performPush(adaptor: any, settingLoader: any, confluenceClient: any, mermaidRenderer: any, options: any) {
+  const pushSpinner = ora("Pushing to Confluence...").start();
+
+  try {
+    const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [
+      new MermaidRendererPlugin(mermaidRenderer),
+    ]);
+
+    const pushResults = await publisher.publish(options.filter || "");
+
+    let pushSuccessCount = 0;
+    let pushFailCount = 0;
+
+    pushResults.forEach((file: any) => {
+      if (file.successfulUploadResult) {
+        pushSuccessCount++;
+      } else {
+        pushFailCount++;
+      }
+    });
+
+    if (pushSuccessCount > 0) {
+      pushSpinner.succeed(chalk.green(`Published ${pushSuccessCount} files to Confluence`));
+    } else {
+      pushSpinner.warn(chalk.yellow("No files to publish"));
+    }
+
+    if (pushFailCount > 0) {
+      console.log(chalk.yellow(`⚠️  ${pushFailCount} files failed to publish`));
+    }
+
+    // Show detailed results
+    pushResults.forEach((file: any) => {
+      if (file.successfulUploadResult) {
+        // Success - minimal logging for sync
+      } else {
+        console.error(
+          chalk.red(
+            `❌ FAILED: ${file.node.file.absoluteFilePath} - ${file.reason}`,
+          ),
+        );
+      }
+    });
+
+  } catch (pushError) {
+    pushSpinner.fail(chalk.red("Failed to push to Confluence"));
+    console.error(chalk.red(`Push error: ${pushError instanceof Error ? pushError.message : String(pushError)}`));
+    throw pushError;
   }
 }
 
