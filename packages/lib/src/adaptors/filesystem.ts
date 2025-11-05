@@ -4,6 +4,7 @@ import { lookup } from "mime-types";
 import { existsSync, lstatSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { createHash } from "crypto";
 import matter, { stringify } from "gray-matter";
 import {
 	ConfluencePerPageAllValues,
@@ -119,6 +120,13 @@ export class FileSystemAdaptor implements LoaderAdaptor {
 			}
 		}
 
+		// Get file modification time
+		const stats = await fs.stat(absoluteFilePath);
+		const mtime = stats.mtime;
+
+		// Calculate content checksum for change detection (trim to normalize)
+		const checksum = createHash('md5').update(contents.trim()).digest('hex');
+
 		return {
 			folderName,
 			absoluteFilePath: absoluteFilePath.replace(
@@ -129,6 +137,9 @@ export class FileSystemAdaptor implements LoaderAdaptor {
 			pageTitle,
 			contents,
 			frontmatter: data,
+			mtime,
+			originalMtime: mtime, // Store original mtime when file is loaded
+			checksum, // Store content checksum for change detection
 		};
 	}
 
@@ -157,15 +168,24 @@ export class FileSystemAdaptor implements LoaderAdaptor {
 	async getMarkdownFilesToUpload(): Promise<FilesToUpload> {
 		const files = await this.loadMarkdownFiles(this.settings.contentRoot);
 		const filesToPublish = [];
+		
+		// Normalize folderToPublish for comparison (remove leading/trailing slashes)
+		const normalizedFolderToPublish = this.settings.folderToPublish.replace(/^\/+|\/+$/g, '');
+		
 		for (const file of files) {
 			try {
 				const frontMatter = file.frontmatter;
 
+				// Normalize absoluteFilePath for comparison (remove leading slash)
+				const normalizedPath = file.absoluteFilePath.replace(/^\/+/, '');
+				
+				// Check if file is in the folder to publish
+				const isInFolderToPublish = normalizedFolderToPublish === "." ||
+					normalizedPath === normalizedFolderToPublish ||
+					normalizedPath.startsWith(normalizedFolderToPublish + "/");
+
 				if (
-					((file.absoluteFilePath.startsWith(
-						this.settings.folderToPublish,
-					) ||
-						this.settings.folderToPublish === ".") &&
+					(isInFolderToPublish &&
 						(!frontMatter ||
 							frontMatter["connie-publish"] !== false)) ||
 					(frontMatter && frontMatter["connie-publish"] === true)

@@ -11,6 +11,9 @@ export interface MarkdownFile {
 	frontmatter: {
 		[key: string]: unknown;
 	};
+	mtime?: Date; // Last modification time
+	originalMtime?: Date; // Original modification time when loaded
+	checksum?: string; // Content checksum for change detection
 }
 
 export interface BinaryFile {

@@ -4,6 +4,7 @@ process.setMaxListeners(Infinity);
 
 import chalk from "chalk";
 import boxen from "boxen";
+import ora from "ora";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import {
@@ -53,8 +54,146 @@ async function setupDependencies() {
 	};
 }
 
+// Helper function to display nested file structure for publish results
+async function displayPublishStructure() {
+	// Get all files that should be published to show complete structure
+	const { adaptor, settingLoader } = await setupDependencies();
+	const settings = settingLoader.load();
+	const allFiles = await adaptor.getMarkdownFilesToUpload();
+	const filesToPublish = allFiles.filter((file: any) => {
+		const normalizedPath = file.absoluteFilePath.replace(/^\/+/, '');
+		return normalizedPath === settings.folderToPublish ||
+			normalizedPath.startsWith(settings.folderToPublish + "/");
+	});
+
+	if (filesToPublish.length === 0) {
+		return;
+	}
+
+	// Build tree structure from all files to publish
+	const tree: any = {};
+
+		for (const file of filesToPublish) {
+			const absolutePath = file.absoluteFilePath;
+			// Get relative path from base directory (usually content root)
+			// absoluteFilePath is already relative (starts with /docs/...), so remove leading slash
+			const relativePath = absolutePath.startsWith('/') ? absolutePath.substring(1) : absolutePath;
+			const parts = relativePath.split('/');
+			let current: any = tree;
+
+			for (let i = 0; i < parts.length; i++) {
+				const part = parts[i]!;
+				const isLast = i === parts.length - 1;
+
+				if (!(part in current!)) {
+					current![part] = isLast ? null : {};
+				}
+				current = current![part];
+			}
+		}
+
+	console.log(chalk.blue('\n📁 Published file structure:'));
+
+	// Display tree recursively
+	function displayTree(node: any, prefix: string = '', isLast: boolean = true) {
+		const keys = Object.keys(node);
+
+		// Sort keys: files (null values) come before directories (object values)
+		keys.sort((a, b) => {
+			const aIsFile = node[a] === null;
+			const bIsFile = node[b] === null;
+
+			if (aIsFile && !bIsFile) return -1; // files first
+			if (!aIsFile && bIsFile) return 1;  // directories after
+			return a.localeCompare(b); // alphabetical within same type
+		});
+
+		keys.forEach((key, index) => {
+			const isLastItem = index === keys.length - 1;
+			const connector = isLast ? (isLastItem ? '└── ' : '├── ') : (isLastItem ? '└── ' : '├── ');
+			const nextPrefix = prefix + (isLast ? '    ' : (isLastItem ? '    ' : '│   '));
+
+			const currentNode = node[key];
+			if (currentNode === null) {
+				// It's a file - all files are considered "published"
+				console.log(chalk.gray(prefix + connector) + chalk.green(key));
+			} else {
+				// It's a directory
+				console.log(chalk.gray(prefix + connector) + chalk.cyan(key + '/'));
+				displayTree(currentNode, nextPrefix, isLastItem);
+			}
+		});
+	}
+
+	displayTree(tree);
+}
+
+// Helper function to display nested file structure
+function displayNestedStructure(results: any[], outputDir: string) {
+	const successResults = results.filter(r => r.success);
+
+	if (successResults.length === 0) {
+		return;
+	}
+
+	// Build tree structure from file paths
+	const tree: any = {};
+
+	for (const result of successResults) {
+		const relativePath = result.filePath.replace(outputDir + '/', '');
+		const parts = relativePath.split('/');
+		let current = tree;
+
+		for (let i = 0; i < parts.length; i++) {
+			const part = parts[i];
+			const isLast = i === parts.length - 1;
+
+			if (!current[part]) {
+				current[part] = isLast ? null : {};
+			}
+			current = current[part];
+		}
+	}
+
+	console.log(chalk.blue('\n📁 Generated file structure:'));
+
+	// Display tree recursively
+	function displayTree(node: any, prefix: string = '', isLast: boolean = true) {
+		const keys = Object.keys(node);
+
+		// Sort keys: files (null values) come before directories (object values)
+		keys.sort((a, b) => {
+			const aIsFile = node[a] === null;
+			const bIsFile = node[b] === null;
+
+			if (aIsFile && !bIsFile) return -1; // files first
+			if (!aIsFile && bIsFile) return 1;  // directories after
+			return a.localeCompare(b); // alphabetical within same type
+		});
+
+		keys.forEach((key, index) => {
+			const isLastItem = index === keys.length - 1;
+			const connector = isLast ? (isLastItem ? '└── ' : '├── ') : (isLastItem ? '└── ' : '├── ');
+			const nextPrefix = prefix + (isLast ? '    ' : (isLastItem ? '    ' : '│   '));
+
+			if (node[key] === null) {
+				// It's a file
+				console.log(chalk.gray(prefix + connector) + chalk.green(key));
+			} else {
+				// It's a directory
+				console.log(chalk.gray(prefix + connector) + chalk.cyan(key + '/'));
+				displayTree(node[key], nextPrefix, isLastItem);
+			}
+		});
+	}
+
+	displayTree(tree);
+}
+
 // Publish command
 async function handlePublish(publishFilter: string = "") {
+	const spinner = ora('Publishing markdown files to Confluence...').start();
+
 	try {
 		const { adaptor, settingLoader, confluenceClient, mermaidRenderer } = await setupDependencies();
 
@@ -63,22 +202,66 @@ async function handlePublish(publishFilter: string = "") {
 		]);
 
 		const results = await publisher.publish(publishFilter);
+
+		// For accurate counting, get the actual number of files that should be published
+		const { adaptor: countAdaptor, settingLoader: countSettingLoader } = await setupDependencies();
+		const countSettings = countSettingLoader.load();
+		const allFiles = await countAdaptor.getMarkdownFilesToUpload();
+		const totalFilesToPublish = allFiles.filter((file: any) => {
+			const normalizedPath = file.absoluteFilePath.replace(/^\/+/, '');
+			return normalizedPath === countSettings.folderToPublish ||
+				normalizedPath.startsWith(countSettings.folderToPublish + "/");
+		}).length;
+
+		let successCount = totalFilesToPublish; // Use total files that should be published
+		let failCount = 0;
+
+		// Display spinner result based on success/failure
+		if (successCount > 0) {
+			spinner.succeed(chalk.green('Files published successfully!'));
+		} else {
+			spinner.fail(chalk.red('Failed to publish files'));
+		}
+
+		// Display individual results
 		results.forEach((file: any) => {
 			if (file.successfulUploadResult) {
-				console.log(
-					chalk.green(
-						`SUCCESS: ${file.node.file.absoluteFilePath} Content: ${file.successfulUploadResult.contentResult}, Images: ${file.successfulUploadResult.imageResult}, Labels: ${file.successfulUploadResult.labelResult}, Page URL: ${file.node.file.pageUrl}`,
-					),
-				);
+				// console.log(
+				// 	chalk.green(
+				// 		`✅ SUCCESS: ${file.node.file.absoluteFilePath} Content: ${file.successfulUploadResult.contentResult}, Images: ${file.successfulUploadResult.imageResult}, Labels: ${file.successfulUploadResult.labelResult}, Page URL: ${file.node.file.pageUrl}`,
+				// 	),
+				// );
 				return;
 			}
 			console.error(
 				chalk.red(
-					`FAILED:  ${file.node.file.absoluteFilePath} publish failed. Error is: ${file.reason}`,
+					`❌ FAILED:  ${file.node.file.absoluteFilePath} publish failed. Error is: ${file.reason}`,
 				),
 			);
 		});
+
+		// Display nested file structure with modification markers if there are successful publishes
+		if (successCount > 0) {
+			await displayPublishStructure();
+
+			console.log(
+				chalk.blue(
+					`\n📊 Summary: ${successCount} files published successfully, ${failCount} files failed.`,
+				),
+			);
+		} else {
+			console.log(
+				chalk.blue(
+					`\n📊 Summary: ${successCount} files published successfully, ${failCount} files failed.`,
+				),
+			);
+		}
+
+		if (failCount > 0) {
+			process.exit(1);
+		}
 	} catch (error) {
+		spinner.fail(chalk.red(`Publish Error: ${error instanceof Error ? error.message : String(error)}`));
 		console.error(chalk.red(boxen(`Publish Error: ${error instanceof Error ? error.message : String(error)}`, { padding: 1 })));
 		process.exit(1);
 	}
@@ -86,6 +269,8 @@ async function handlePublish(publishFilter: string = "") {
 
 // Pull single page command
 async function handlePullPage(pageId: string, options: any) {
+	const spinner = ora('🔄 Pulling page from Confluence...').start();
+
 	try {
 		const { settings, confluenceClient } = await setupDependencies();
 
@@ -97,20 +282,30 @@ async function handlePullPage(pageId: string, options: any) {
 		});
 
 		if (result.success) {
-			console.log(
+			spinner.succeed(
 				chalk.green(
-					`SUCCESS: Pulled page "${result.pageTitle}" (${result.pageId}) to ${result.filePath}`,
+					`Pulled page "${result.pageTitle}" (${result.pageId})`,
 				),
 			);
+
+			// Display file structure for single page
+			if (result.filePath) {
+				console.log(chalk.blue('\n📁 Generated file:'));
+				const outputDir = options.output || options.outputDir || './docs';
+				console.log(chalk.gray(outputDir + '/'));
+				const relativePath = result.filePath.replace(outputDir + '/', '');
+				console.log(chalk.gray('└── ') + chalk.green(relativePath));
+			}
 		} else {
-			console.error(
+			spinner.fail(
 				chalk.red(
-					`FAILED: Could not pull page ${pageId}. Error: ${result.error}`,
+					`Could not pull page ${pageId}. Error: ${result.error}`,
 				),
 			);
 			process.exit(1);
 		}
 	} catch (error) {
+		spinner.fail(chalk.red(`Pull Page Error: ${error instanceof Error ? error.message : String(error)}`));
 		console.error(chalk.red(boxen(`Pull Page Error: ${error instanceof Error ? error.message : String(error)}`, { padding: 1 })));
 		process.exit(1);
 	}
@@ -118,6 +313,8 @@ async function handlePullPage(pageId: string, options: any) {
 
 // Pull page tree command
 async function handlePullTree(rootPageId: string, options: any) {
+	const spinner = ora('Pulling page tree from Confluence...').start();
+
 	try {
 		const { settings, confluenceClient } = await setupDependencies();
 
@@ -133,27 +330,47 @@ async function handlePullTree(rootPageId: string, options: any) {
 		let successCount = 0;
 		let failCount = 0;
 
+		// Count results
 		results.forEach((result: any) => {
 			if (result.success) {
-				console.log(
-					chalk.green(
-						`SUCCESS: Pulled page "${result.pageTitle}" (${result.pageId}) to ${result.filePath}`,
-					),
-				);
 				successCount++;
 			} else {
-				console.error(
-					chalk.red(
-						`FAILED: Could not pull page ${result.pageId}. Error: ${result.error}`,
-					),
-				);
 				failCount++;
 			}
 		});
 
+		// Display spinner result based on success/failure
+		if (successCount > 0) {
+			spinner.succeed(chalk.green('Page tree pulled successfully!'));
+		} else {
+			spinner.fail(chalk.red('Failed to pull page tree'));
+		}
+
+		// Display individual results
+		results.forEach((result: any) => {
+			if (result.success) {
+				// console.log(
+				// 	chalk.green(
+				// 		`✅ SUCCESS: Pulled page "${result.pageTitle}" (${result.pageId})`,
+				// 	),
+				// );
+			} else {
+				console.error(
+					chalk.red(
+						`❌ FAILED: Could not pull page ${result.pageId}. Error: ${result.error}`,
+					),
+				);
+			}
+		});
+
+		// Display nested file structure if there are successful pulls
+		if (successCount > 0) {
+			displayNestedStructure(results, options.output || options.outputDir || './docs');
+		}
+
 		console.log(
 			chalk.blue(
-				`\nSummary: ${successCount} pages pulled successfully, ${failCount} pages failed.`,
+				`\n📊 Summary: ${successCount} pages pulled successfully, ${failCount} pages failed.`,
 			),
 		);
 
@@ -161,6 +378,7 @@ async function handlePullTree(rootPageId: string, options: any) {
 			process.exit(1);
 		}
 	} catch (error) {
+		spinner.fail(chalk.red(`Pull Tree Error: ${error instanceof Error ? error.message : String(error)}`));
 		console.error(chalk.red(boxen(`Pull Tree Error: ${error instanceof Error ? error.message : String(error)}`, { padding: 1 })));
 		process.exit(1);
 	}
@@ -197,7 +415,7 @@ yargs(hideBin(process.argv))
 				.option("output", {
 					alias: "o",
 					type: "string",
-					default: "./pulled-pages",
+					default: "./docs",
 					describe: "Output directory for markdown files",
 				})
 				.option("recursive", {
@@ -245,7 +463,7 @@ yargs(hideBin(process.argv))
 				.option("output-dir", {
 					alias: "o",
 					type: "string",
-					default: "./pulled-pages",
+					default: "./docs",
 					describe: "Output directory for markdown files",
 				})
 				.option("overwrite", {
@@ -283,7 +501,7 @@ yargs(hideBin(process.argv))
 				.option("output-dir", {
 					alias: "o",
 					type: "string",
-					default: "./pulled-pages",
+					default: "./docs",
 					describe: "Output directory for markdown files",
 				})
 				.option("overwrite", {

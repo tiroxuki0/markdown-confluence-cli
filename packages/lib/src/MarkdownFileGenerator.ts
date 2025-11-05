@@ -19,7 +19,7 @@ export interface FileGenerationResult {
 }
 
 export class MarkdownFileGenerator {
-	private defaultOutputDir: string = "./pulled-pages";
+	private defaultOutputDir: string = "./docs";
 	private defaultFileNameTemplate: string = "{title}.md";
 	private baseUrl: string = "https://your-domain.atlassian.net";
 
@@ -155,10 +155,10 @@ export class MarkdownFileGenerator {
 	private generateFileName(page: ConfluencePageData, template: string): string {
 		let fileName = template;
 
-		// Replace template variables
-		fileName = fileName.replace("{title}", this.sanitizeFileName(page.title));
-		fileName = fileName.replace("{id}", page.id);
-		fileName = fileName.replace("{spaceKey}", page.space.key);
+		// Replace template variables with null checks
+		fileName = fileName.replace("{title}", this.sanitizeFileName(page.title || "untitled"));
+		fileName = fileName.replace("{id}", page.id || "unknown");
+		fileName = fileName.replace("{spaceKey}", page.space?.key || "unknown");
 
 		// Ensure .md extension
 		if (!fileName.endsWith(".md")) {
@@ -172,6 +172,9 @@ export class MarkdownFileGenerator {
 	 * Sanitize filename to be filesystem-safe
 	 */
 	private sanitizeFileName(name: string): string {
+		if (!name || typeof name !== 'string') {
+			return "untitled";
+		}
 		return name
 			.replace(/[<>:"/\\|?*]/g, "_") // Replace invalid chars
 			.replace(/\s+/g, "_") // Replace spaces with underscores
@@ -200,6 +203,10 @@ export class MarkdownFileGenerator {
 			frontmatter.parentId = (page.ancestors[page.ancestors.length - 1] as any)?.id;
 		}
 
+		// Add connie-specific fields for publish capability
+		frontmatter["connie-publish"] = true;
+		frontmatter["connie-page-id"] = page.id;
+
 		// Convert to YAML format
 		return Object.entries(frontmatter)
 			.map(([key, value]) => `${key}: ${this.formatYamlValue(value)}`)
@@ -210,6 +217,18 @@ export class MarkdownFileGenerator {
 	 * Format value for YAML (handle strings with special chars)
 	 */
 	private formatYamlValue(value: any): string {
+		if (typeof value === "boolean") {
+			// Boolean values should be written as true/false without quotes
+			return value ? "true" : "false";
+		}
+		if (value === null || value === undefined) {
+			// Null values should be written as null or ~
+			return "null";
+		}
+		if (typeof value === "number") {
+			// Numbers should be written as-is
+			return String(value);
+		}
 		if (typeof value === "string") {
 			// Quote strings with spaces, colons, or other special chars
 			if (value.includes(" ") || value.includes(":") || value.includes("'") || value.includes('"')) {
@@ -217,7 +236,8 @@ export class MarkdownFileGenerator {
 			}
 			return value;
 		}
-		return String(value);
+		// For other types (objects, arrays), convert to JSON string
+		return JSON.stringify(value);
 	}
 
 	/**

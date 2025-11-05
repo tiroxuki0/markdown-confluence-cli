@@ -17,7 +17,7 @@ The `pull` command allows you to download Confluence pages as markdown files to 
 Pull a single Confluence page by its page ID:
 
 ```bash
-# Pull a page to default directory (./pulled-pages)
+# Pull a page to default directory (./docs)
 npx md-confluence-cli@latest pull 123456789
 
 # Pull to a specific directory
@@ -46,7 +46,7 @@ npx md-confluence-cli@latest pull 123456789 --recursive --max-depth 5
 
 | Option | Alias | Type | Default | Description |
 |--------|-------|------|---------|-------------|
-| `--output` | `-o` | string | `./pulled-pages` | Output directory for markdown files |
+| `--output` | `-o` | string | `./docs` | Output directory for markdown files |
 | `--recursive` | `-r` | boolean | `false` | Pull page and all children recursively |
 | `--max-depth` | - | number | `10` | Maximum recursion depth when using `--recursive` |
 | `--overwrite` | `-w` | boolean | `false` | Overwrite existing files |

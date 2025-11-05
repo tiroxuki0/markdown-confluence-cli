@@ -20,15 +20,14 @@ function flattenTree(
 	const nodes: ConfluenceNode[] = [];
 	const { file, version, lastUpdatedBy, existingPageData, children } = node;
 
-	if (ancestors.length > 0) {
-		nodes.push({
-			file,
-			version,
-			lastUpdatedBy,
-			existingPageData,
-			ancestors,
-		});
-	}
+	// Always include the node, regardless of ancestors (for counting purposes)
+	nodes.push({
+		file,
+		version,
+		lastUpdatedBy,
+		existingPageData,
+		ancestors,
+	});
 
 	if (children) {
 		children.forEach((child) => {
@@ -48,6 +47,8 @@ export async function ensureAllFilesExistInConfluence(
 	topPageId: string,
 	settings: ConfluenceSettings,
 ): Promise<ConfluenceNode[]> {
+	// For root node, always create page (force publish all files including root)
+	const shouldCreateRootPage = !!node.file;
 	const confluenceNode = await createFileStructureInConfluence(
 		settings,
 		confluenceClient,
@@ -56,7 +57,7 @@ export async function ensureAllFilesExistInConfluence(
 		spaceKey,
 		parentPageId,
 		topPageId,
-		false,
+		shouldCreateRootPage,
 	);
 
 	const pages = flattenTree(confluenceNode);
@@ -124,6 +125,7 @@ async function createFileStructureInConfluence(
 	}
 
 	const childDetailsTasks = node.children.map((childNode) => {
+		// Force create all child pages too
 		return createFileStructureInConfluence(
 			settings,
 			confluenceClient,
@@ -132,7 +134,7 @@ async function createFileStructureInConfluence(
 			spaceKey,
 			file.pageId,
 			topPageId,
-			true,
+			true, // Always create child pages
 		);
 	});
 

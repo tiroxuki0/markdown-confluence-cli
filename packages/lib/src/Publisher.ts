@@ -335,13 +335,6 @@ export class Publisher {
 			!isEqual(existingPageDetails, newPageDetails)
 		) {
 			result.contentResult = "updated";
-			console.log(`TESTING DIFF - ${adfFile.absoluteFilePath}`);
-
-			const replacer = (_key: unknown, value: unknown) =>
-				typeof value === "undefined" ? null : value;
-
-			console.log(JSON.stringify(existingPageData.adfContent, replacer));
-			console.log(JSON.stringify(adfToUpload, replacer));
 
 			const updateContentDetails = {
 				...newPageDetails,
