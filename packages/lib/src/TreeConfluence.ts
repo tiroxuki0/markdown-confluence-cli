@@ -89,16 +89,16 @@ async function createFileStructureInConfluence(
   let lastUpdatedBy: string | undefined;
   const file: ConfluenceAdfFile = {
     ...node.file,
-    pageId: node.file.pageId || parentPageId, // Use file's pageId if exists, otherwise use parentPageId
+    pageId: node.file.pageId || "", // Keep undefined as empty string - ensurePageExists will handle creating new page
     spaceKey,
     pageUrl: "",
   };
 
   if (createPage) {
-    // Use file (which has pageId preserved) instead of node.file for ensurePageExists
+    // Use file with pageId from the original file (not fallback to parent)
     const fileToCheck: LocalAdfFile = {
       ...node.file,
-      pageId: file.pageId, // Use preserved pageId from file
+      pageId: file.pageId, // Use pageId from the constructed file
     };
     const pageDetails = await ensurePageExists(
       confluenceClient,
