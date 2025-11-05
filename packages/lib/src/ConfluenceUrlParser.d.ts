@@ -1,2 +1,5 @@
-export declare function cleanUpUrlIfConfluence(input: string, confluenceBaseUrl: string): string;
+export declare function cleanUpUrlIfConfluence(
+  input: string,
+  confluenceBaseUrl: string,
+): string;
 //# sourceMappingURL=ConfluenceUrlParser.d.ts.map
