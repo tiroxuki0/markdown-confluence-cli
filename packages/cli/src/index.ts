@@ -471,144 +471,111 @@ async function handlePullTree(rootPageId: string, options: any) {
   }
 }
 
-// Sync command (pull + push)
+// Sync command (pull from Confluence + push to Confluence)
 async function handleSync(options: any) {
-  console.log(chalk.blue("🔄 Starting sync process (pull + push)..."));
+  console.log(chalk.blue("Starting Confluence sync..."));
 
   try {
-    // Step 1: Check git status
-    const statusSpinner = ora("Checking git status...").start();
-    const { execSync } = await import('child_process');
+    const { adaptor, settingLoader, confluenceClient, mermaidRenderer } =
+      await setupDependencies();
+
+    const settings = settingLoader.load();
+
+    const pullSpinner = ora("Pulling from Confluence...").start();
 
     try {
-      // Check if we're in a git repository
-      execSync('git rev-parse --git-dir', { stdio: 'ignore' });
-    } catch (error) {
-      statusSpinner.fail(chalk.red("Not a git repository"));
-      console.log(chalk.yellow("💡 Tip: Initialize git repository with 'git init'"));
+      const puller = new Puller(confluenceClient, settings);
+      const pullResults = await puller.pullPageTree(settings.confluenceParentId, {
+        outputDir: settings.folderToPublish || "./docs",
+        overwriteExisting: options.overwrite || false,
+        includeChildren: true,
+        fileNameTemplate: options.fileNameTemplate || "{title}.md",
+        maxDepth: options.maxDepth || 10,
+      });
+
+      let pullSuccessCount = 0;
+      let pullFailCount = 0;
+
+      pullResults.forEach((result: any) => {
+        if (result.success) {
+          pullSuccessCount++;
+        } else {
+          pullFailCount++;
+        }
+      });
+
+      if (pullSuccessCount > 0) {
+        pullSpinner.succeed(chalk.green(`Pulled ${pullSuccessCount} pages from Confluence`));
+        if (pullSuccessCount > 0) {
+          displayNestedStructure(
+            pullResults,
+            settings.folderToPublish || "./docs",
+          );
+        }
+      } else {
+        pullSpinner.warn(chalk.yellow("No new pages to pull"));
+      }
+
+      if (pullFailCount > 0) {
+        console.log(chalk.yellow(`⚠️  ${pullFailCount} pages failed to pull`));
+      }
+
+    } catch (pullError) {
+      pullSpinner.fail(chalk.red("Failed to pull from Confluence"));
+      console.error(chalk.red(`Pull error: ${pullError instanceof Error ? pullError.message : String(pullError)}`));
+      // Continue to push step even if pull fails
+    }
+
+    const pushSpinner = ora("Pushing to Confluence...").start();
+
+    try {
+      const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [
+        new MermaidRendererPlugin(mermaidRenderer),
+      ]);
+
+      const pushResults = await publisher.publish(options.filter || "");
+
+      let pushSuccessCount = 0;
+      let pushFailCount = 0;
+
+      pushResults.forEach((file: any) => {
+        if (file.successfulUploadResult) {
+          pushSuccessCount++;
+        } else {
+          pushFailCount++;
+        }
+      });
+
+      if (pushSuccessCount > 0) {
+        pushSpinner.succeed(chalk.green(`Published ${pushSuccessCount} files to Confluence`));
+      } else {
+        pushSpinner.warn(chalk.yellow("No files to publish"));
+      }
+
+      if (pushFailCount > 0) {
+        console.log(chalk.yellow(`⚠️  ${pushFailCount} files failed to publish`));
+      }
+
+      // Show detailed results
+      pushResults.forEach((file: any) => {
+        if (file.successfulUploadResult) {
+          // Success - minimal logging for sync
+        } else {
+          console.error(
+            chalk.red(
+              `❌ FAILED: ${file.node.file.absoluteFilePath} - ${file.reason}`,
+            ),
+          );
+        }
+      });
+
+    } catch (pushError) {
+      pushSpinner.fail(chalk.red("Failed to push to Confluence"));
+      console.error(chalk.red(`Push error: ${pushError instanceof Error ? pushError.message : String(pushError)}`));
       process.exit(1);
     }
 
-    // Get current branch
-    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-    statusSpinner.succeed(chalk.green(`On branch: ${currentBranch}`));
-
-    // Step 2: Fetch latest changes
-    const fetchSpinner = ora("Fetching latest changes from remote...").start();
-    try {
-      execSync('git fetch --all', { stdio: 'pipe' });
-      fetchSpinner.succeed(chalk.green("Fetched latest changes"));
-    } catch (error) {
-      fetchSpinner.warn(chalk.yellow("Could not fetch (no remote configured?)"));
-    }
-
-    // Step 3: Check for remote changes
-    const pullSpinner = ora("Checking for remote changes to pull...").start();
-    let hasRemoteChanges = false;
-    let canFastForward = false;
-
-    try {
-      // Check if we can fast-forward
-      execSync('git merge-base --is-ancestor HEAD @{upstream}', { stdio: 'ignore' });
-      canFastForward = false; // We're already up to date
-    } catch (error) {
-      // We have changes to pull
-      try {
-        execSync('git diff --quiet HEAD @{upstream}', { stdio: 'ignore' });
-        canFastForward = false; // No changes
-      } catch (error) {
-        hasRemoteChanges = true;
-        canFastForward = true;
-      }
-    }
-
-    if (hasRemoteChanges && canFastForward) {
-      // Safe to pull
-      execSync('git pull --ff-only', { stdio: 'pipe' });
-      pullSpinner.succeed(chalk.green("Pulled remote changes"));
-    } else if (hasRemoteChanges) {
-      // Need to merge
-      try {
-        execSync('git pull', { stdio: 'pipe' });
-        pullSpinner.succeed(chalk.green("Merged remote changes"));
-      } catch (mergeError) {
-        pullSpinner.fail(chalk.red("Merge conflict detected"));
-        console.log(chalk.yellow("⚠️  Please resolve merge conflicts and run 'git add .' then 'git commit'"));
-        console.log(chalk.blue("💡 After resolving conflicts, run sync again to push"));
-        process.exit(1);
-      }
-    } else {
-      pullSpinner.succeed(chalk.green("Already up to date"));
-    }
-
-    // Step 4: Check for local changes to push
-    const pushSpinner = ora("Checking for local changes to push...").start();
-
-    // Check if there are any staged or unstaged changes
-    let hasChanges = false;
-    try {
-      execSync('git diff --quiet', { stdio: 'ignore' });
-    } catch (error) {
-      hasChanges = true;
-    }
-
-    let hasStagedChanges = false;
-    try {
-      execSync('git diff --cached --quiet', { stdio: 'ignore' });
-    } catch (error) {
-      hasStagedChanges = true;
-    }
-
-    if (!hasChanges && !hasStagedChanges) {
-      pushSpinner.succeed(chalk.green("No local changes to push"));
-      console.log(chalk.blue("\n✅ Sync complete: Repository is up to date"));
-      return;
-    }
-
-    // Stage all changes if requested
-    if (options.addAll && hasChanges) {
-      execSync('git add .');
-      console.log(chalk.blue("📝 Staged all changes"));
-    }
-
-    // Check if we need to commit
-    let needsCommit = false;
-    try {
-      execSync('git diff --cached --quiet', { stdio: 'ignore' });
-    } catch (error) {
-      needsCommit = true;
-    }
-
-    if (needsCommit) {
-      if (options.commitMessage) {
-        execSync(`git commit -m "${options.commitMessage}"`);
-        pushSpinner.succeed(chalk.green(`Committed changes: ${options.commitMessage}`));
-      } else {
-        pushSpinner.fail(chalk.yellow("Changes staged but no commit message provided"));
-        console.log(chalk.blue("💡 Use --commit-message to auto-commit, or commit manually"));
-        console.log(chalk.blue("💡 Then run sync again to push"));
-        process.exit(0);
-      }
-    } else {
-      pushSpinner.succeed(chalk.green("All changes committed"));
-    }
-
-    // Step 5: Push changes
-    const finalPushSpinner = ora("Pushing changes to remote...").start();
-    try {
-      execSync('git push', { stdio: 'pipe' });
-      finalPushSpinner.succeed(chalk.green("Successfully pushed changes"));
-    } catch (pushError: any) {
-      if (pushError.message.includes('non-fast-forward')) {
-        finalPushSpinner.fail(chalk.red("Push failed: Remote has changes not in local"));
-        console.log(chalk.yellow("⚠️  Run 'git pull' first to merge remote changes"));
-      } else {
-        finalPushSpinner.fail(chalk.red(`Push failed: ${pushError.message}`));
-      }
-      process.exit(1);
-    }
-
-    console.log(chalk.blue("\n✅ Sync complete: Successfully pulled and pushed all changes"));
+    console.log(chalk.blue("Confluence sync complete!"));
 
   } catch (error) {
     console.error(
@@ -622,9 +589,9 @@ async function handleSync(options: any) {
       ),
     );
     console.log(chalk.yellow("💡 Common solutions:"));
-    console.log(chalk.yellow("   • Resolve merge conflicts: 'git add .' then 'git commit'"));
-    console.log(chalk.yellow("   • Set upstream: 'git push -u origin <branch>'"));
-    console.log(chalk.yellow("   • Check remote: 'git remote -v'"));
+    console.log(chalk.yellow("   • Check your Confluence credentials"));
+    console.log(chalk.yellow("   • Verify network connectivity"));
+    console.log(chalk.yellow("   • Check .markdown-confluence.json configuration"));
     process.exit(1);
   }
 }
@@ -773,19 +740,30 @@ yargs(hideBin(process.argv))
   )
   .command(
     "sync",
-    "Sync git repository: pull remote changes + push local updates",
+    "Sync with Confluence: pull latest changes + push local updates",
     (yargs) => {
       yargs
-        .option("add-all", {
-          alias: "a",
+        .option("filter", {
+          alias: "f",
+          type: "string",
+          describe: "Filter pattern for files to publish",
+        })
+        .option("overwrite", {
+          alias: "w",
           type: "boolean",
           default: false,
-          describe: "Automatically stage all changes",
+          describe: "Force update all files from Confluence (default: only pull new files)",
         })
-        .option("commit-message", {
-          alias: "m",
+        .option("max-depth", {
+          type: "number",
+          default: 10,
+          describe: "Maximum recursion depth when pulling (default: 10)",
+        })
+        .option("file-name-template", {
+          alias: "t",
           type: "string",
-          describe: "Commit message for auto-commit (requires --add-all)",
+          default: "{title}.md",
+          describe: "Template for filename generation when pulling",
         });
     },
     async (argv: any) => {

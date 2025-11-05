@@ -4,90 +4,124 @@
 
 ## Sync Command
 
-The `sync` command provides a convenient way to synchronize your git repository by pulling remote changes and pushing local updates in a single operation. This is perfect for keeping your documentation repository up to date.
+The `sync` command provides a convenient way to synchronize your local markdown files with Confluence by pulling the latest changes from Confluence and pushing your local updates in a single operation. This is perfect for keeping your documentation perfectly synchronized.
 
 ## Sync Features
 
-- **Automatic pull**: Fetches and merges remote changes safely
-- **Smart push**: Only pushes when you have local changes
-- **Merge conflict detection**: Handles conflicts gracefully with clear instructions
-- **Auto-commit option**: Can automatically stage and commit changes
-- **Status reporting**: Shows exactly what's happening at each step
+- **Bi-directional sync**: Pulls latest from Confluence + pushes local changes
+- **Smart processing**: Only processes files that need updating
+- **Detailed reporting**: Shows exactly what was pulled and pushed
+- **Error resilience**: Continues operation even if some files fail
+- **Configuration aware**: Uses your existing `.markdown-confluence.json` settings
 
 ### Basic Sync
 
-Sync your repository (pull + push):
+Sync your documentation with Confluence:
 
 ```bash
-# Simple sync - only pushes if you have committed changes
+# Simple sync - pulls latest from Confluence and pushes local changes
 npx md-confluence-cli@latest sync
 
-# Sync with auto-commit (stages and commits all changes)
-npx md-confluence-cli@latest sync --add-all --commit-message "Update documentation"
+# Sync with custom options
+npx md-confluence-cli@latest sync --overwrite --max-depth 5
 ```
 
 ### Sync Command Options
 
 | Option | Alias | Type | Default | Description |
 |--------|-------|------|---------|-------------|
-| `--add-all` | `-a` | boolean | `false` | Automatically stage all changes |
-| `--commit-message` | `-m` | string | - | Commit message for auto-commit (requires `--add-all`) |
+| `--filter` | `-f` | string | - | Filter pattern for files to publish |
+| `--overwrite` | `-w` | boolean | `false` | Force update all files from Confluence (default: only pull new files) |
+| `--max-depth` | - | number | `10` | Maximum recursion depth when pulling |
+| `--file-name-template` | `-t` | string | `{title}.md` | Template for filename generation when pulling |
 
 ### Sync Process Flow
 
 The sync command follows this intelligent workflow:
 
-1. **Check git status** - Ensures you're in a git repository
-2. **Fetch latest** - Gets latest changes from remote without merging
-3. **Pull if needed** - Only pulls if there are remote changes
-4. **Check local changes** - Looks for uncommitted work
-5. **Auto-commit** - Stages and commits if requested
-6. **Push changes** - Pushes your updates to remote
+1. **Pull from Confluence** - Downloads latest page tree from your configured parent page
+   - **Only pulls new files** by default (files that don't exist locally)
+   - Use `--overwrite` to force update all existing files
+2. **Update local files** - Creates new markdown files in your publish folder
+3. **Push to Confluence** - Publishes any local changes back to Confluence
+4. **Report results** - Shows summary of what was synchronized
 
 ### Sync Examples
 
 **Example 1: Basic sync**
 ```bash
 npx md-confluence-cli@latest sync
-# ✅ Sync complete: Successfully pulled and pushed all changes
+# 📥 Step 1: Pulling latest changes from Confluence...
+# 📤 Step 2: Pushing local changes to Confluence...
+# ✅ Confluence sync complete!
 ```
 
-**Example 2: Sync with auto-commit**
+**Example 2: Force sync all files**
 ```bash
-npx md-confluence-cli@latest sync --add-all --commit-message "Update API documentation"
-# 📝 Staged all changes
-# ✅ Sync complete: Successfully pulled and pushed all changes
+npx md-confluence-cli@latest sync --overwrite
+# Forces update of all files from Confluence (overwrites existing)
 ```
 
-**Example 3: Sync after documentation changes**
+**Example 3: Sync specific files only**
 ```bash
-# Edit some markdown files...
-npx md-confluence-cli@latest sync -a -m "Add new API endpoints documentation"
+npx md-confluence-cli@latest sync --filter "api/**"
+# Only pushes files in the api/ directory
+```
+
+**Example 4: Limited depth sync**
+```bash
+npx md-confluence-cli@latest sync --max-depth 3
+# Only pulls pages up to 3 levels deep
+```
+
+### Sync Output Example
+
+```
+🔄 Starting Confluence sync (pull + push)...
+
+📥 Step 1: Pulling latest changes from Confluence...
+✔ Pulled 5 pages from Confluence
+
+📁 Generated file structure:
+docs/
+├── index.md
+├── api/
+│   ├── index.md
+│   └── endpoints.md
+└── guides/
+    └── getting-started.md
+
+📤 Step 2: Pushing local changes to Confluence...
+✔ Published 2 files to Confluence
+
+✅ Confluence sync complete!
+🔄 Local files are now synchronized with Confluence
 ```
 
 ### Sync Error Handling
 
-The sync command handles common git scenarios:
+The sync command handles common Confluence scenarios:
 
-- **Merge conflicts**: Shows clear instructions to resolve conflicts
-- **No remote**: Warns if no remote repository is configured
-- **Not a git repo**: Provides helpful initialization tips
-- **Push rejected**: Explains how to set upstream branch
+- **Network issues**: Retries failed operations where possible
+- **Permission errors**: Shows clear authentication error messages
+- **Missing pages**: Continues with available pages
+- **Rate limiting**: Automatically handles Confluence API limits
 
 **Example error output:**
 ```
-⚠️  Merge conflict detected
-💡 After resolving conflicts, run 'git add .' then 'git commit'
-💡 Then run sync again to push
+⚠️  2 pages failed to pull
+❌ FAILED: docs/api/deprecated.md - Permission denied
+💡 Check your Confluence API token and permissions
 ```
 
 ### Sync Best Practices
 
-- **Use `--add-all`** when you want to commit all current changes
-- **Always provide commit messages** with `--commit-message` for traceability
-- **Resolve conflicts immediately** when they occur
-- **Run sync regularly** to keep repositories synchronized
-- **Check status first** if you're unsure about local changes
+- **Run regularly** to keep documentation synchronized
+- **Default behavior** only pulls new files (safe for existing local work)
+- **Use `--overwrite`** when you want to force update all files from Confluence
+- **Use `--filter`** to sync specific sections of your documentation
+- **Check results** to ensure all important files were synchronized
+- **Backup important local changes** before running sync with `--overwrite`
 
 # Pull Commands
 
@@ -274,11 +308,14 @@ set ATLASSIAN_API_TOKEN="YOUR API TOKEN"
 # Publish markdown files to Confluence (default command)
 npx md-confluence-cli
 
-# Sync git repository (pull + push)
+# Sync with Confluence (pull + push)
 npx md-confluence-cli sync
 
-# Sync with auto-commit
-npx md-confluence-cli sync --add-all --commit-message "Update docs"
+# Sync with overwrite local files
+npx md-confluence-cli sync --overwrite
+
+# Sync specific files only
+npx md-confluence-cli sync --filter "api/**"
 
 # Pull a single page from Confluence
 npx md-confluence-cli pull <pageId>
