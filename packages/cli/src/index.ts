@@ -897,9 +897,16 @@ Remember to follow the project's established patterns, naming conventions, and a
       temperature: 0.4,
     });
 
-    const markdown = response.choices[0]?.message?.content;
+    let markdown = response.choices[0]?.message?.content;
     if (!markdown) {
       throw new Error("No response from OpenAI API");
+    }
+
+    // Clean markdown code block wrapper if AI added it
+    if (markdown.startsWith('```markdown') && markdown.endsWith('```')) {
+      markdown = markdown.slice(11, -3).trim(); // Remove ```markdown\n and \n```
+    } else if (markdown.startsWith('```') && markdown.endsWith('```')) {
+      markdown = markdown.slice(4, -3).trim(); // Remove ```\n and \n```
     }
 
     generateSpinner.succeed(chalk.green("Documentation generated successfully"));
