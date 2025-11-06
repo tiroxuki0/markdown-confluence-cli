@@ -1018,11 +1018,10 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
       // Path doesn't exist, treat as file path
     }
 
-    // Format feature name for title (convert underscores/spaces to title case)
     const formattedTitle = options.feature
       ? options.feature : 'New Feature'
 
-    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n\n\n${markdown}`;
+    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---${options.feature}\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
 
