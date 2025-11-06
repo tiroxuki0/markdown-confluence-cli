@@ -1021,7 +1021,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
     const formattedTitle = options.feature
       ? options.feature : 'New Feature'
 
-    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---${options.feature}\n${markdown}`;
+    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
 
