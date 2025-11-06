@@ -816,6 +816,7 @@ async function handleGenerateDocs(options: any) {
     }
 
     const openai = new OpenAI({
+      baseURL: process.env['OPENAI_BASE_URL'] || 'https://openrouter.ai/api/v1',
       apiKey: openaiApiKey,
     });
 
