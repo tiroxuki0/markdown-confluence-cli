@@ -183,7 +183,6 @@ The generate-docs command includes intelligent rate limiting handling:
 **Automatic Retry on 429 Errors:**
 - Detects rate limiting errors automatically
 - Uses exponential backoff (2x delay each retry)
-- Shows friendly Vietnamese messages: "🤖 AI đang mệt... thử lại lần X sau Y giây..."
 - Configurable retry attempts and delay
 
 **Rate Limiting Examples:**

@@ -823,8 +823,8 @@ export async function retryWithBackoff<T>(
       const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
       const delaySeconds = Math.ceil(delay / 1000);
 
-      console.log(chalk.yellow(`🤖 AI đang mệt... thử lại lần ${attempt}/${maxRetries} sau ${delaySeconds} giây...`));
-      console.log(chalk.gray(`   Lỗi: ${error?.message || 'Rate limiting'}`));
+      console.log(chalk.yellow(`Retrying... ${attempt}/${maxRetries} in ${delaySeconds} seconds...`));
+      console.log(chalk.gray(`   Error: ${error?.message || 'Rate limiting'}`));
 
       await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -1137,7 +1137,6 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
         chalk.red(
           boxen(
             `🤖 AI is tired!\n\n` +
-            `Lỗi: ${error?.message || 'Rate limiting exceeded'}\n\n` +
             `💡 Please try again later or:\n` +
             `   • Switch to a different model`,
             { padding: 1 },
@@ -1174,7 +1173,7 @@ export function preprocessFeatureArgs(args: string[]): string[] {
       continue;
     }
 
-    // Handle --feature or -f flag
+    // Handle --feature or -f flag (both --feature=value and --feature value formats)
     if (arg === '--feature' || arg === '-f') {
       processedArgs.push(arg);
       i++; // Move to next argument
@@ -1195,6 +1194,16 @@ export function preprocessFeatureArgs(args: string[]): string[] {
         // No feature name provided, yargs will handle the error
         i--; // Back up so yargs sees the missing value
       }
+    } else if (arg.startsWith('--feature=') || arg.startsWith('-f=')) {
+      // Handle --feature=value or -f=value format
+      const flag = arg.startsWith('--feature=') ? '--feature' : '-f';
+      const value = arg.split('=', 2)[1] || '';
+
+      processedArgs.push(flag);
+      // Remove surrounding quotes and add the value
+      const cleanValue = value.replace(/^["']|["']$/g, '');
+      processedArgs.push(cleanValue);
+      i++;
     } else {
       processedArgs.push(arg);
       i++;
