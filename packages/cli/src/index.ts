@@ -930,12 +930,12 @@ async function handleGenerateDocs(options: any) {
 
   try {
     // Check OpenAI API key
-    const openaiApiKey = process.env['OPENAI_API_KEY'];
+    const openaiApiKey = process.env['GEMINI_API_KEY'];
     if (!openaiApiKey) {
       console.error(
         chalk.red(
           boxen(
-            "OpenAI API key is required. Set OPENAI_API_KEY environment variable.",
+            "GeminiAI API key is required. Set GEMINI_API_KEY environment variable.",
             { padding: 1 },
           ),
         ),
@@ -1155,7 +1155,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
           ),
         ),
       );
-      console.log(chalk.yellow("💡 Make sure OPENAI_API_KEY is set and you have internet connection"));
+      console.log(chalk.yellow("💡 Make sure GEMINI_API_KEY is set and you have internet connection"));
     }
     process.exit(1);
   }

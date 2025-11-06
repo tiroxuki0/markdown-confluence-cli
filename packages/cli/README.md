@@ -64,13 +64,13 @@ The `generate-docs` command uses OpenAI to automatically create feature document
 
 ### Generate Docs Setup
 
-**1. Set OpenAI API Key:**
+**1. Set Gemini API Key:**
 ```bash
 # macOS/Linux
-export OPENAI_API_KEY="your-api-key-here"
+export GEMINI_API_KEY="your-api-key-here"
 
 # Windows
-set OPENAI_API_KEY="your-api-key-here"
+set GEMINI_API_KEY="your-api-key-here"
 ```
 
 **2. Create AGENT.md (highly recommended for best results):**
