@@ -48,7 +48,153 @@ The sync command follows this intelligent workflow:
 3. **Perform operation** - Executes the chosen sync strategy
 4. **Report results** - Shows what was synchronized
 
-### Sync Examples
+## Generate Docs Command
+
+The `generate-docs` command uses OpenAI to automatically create feature documentation from your code changes. This is perfect for maintaining up-to-date documentation as you develop.
+
+### Generate Docs Features
+
+- **AI-Powered Documentation**: Uses GPT-4 to analyze code changes and generate comprehensive docs
+- **Project-Aware**: Automatically reads multiple project context files for accurate documentation
+- **Context Sources**: AGENT.md, README.md, package.json, Confluence config, environment files
+- **Pattern Recognition**: Follows your project's established conventions and architecture
+- **Multiple Formats**: Supports different git diff commands for various scenarios
+- **Auto-Publish**: Can automatically publish generated docs to Confluence
+- **Flexible Output**: Customizable output file and AI model selection
+
+### Generate Docs Setup
+
+**1. Set OpenAI API Key:**
+```bash
+# macOS/Linux
+export OPENAI_API_KEY="your-api-key-here"
+
+# Windows
+set OPENAI_API_KEY="your-api-key-here"
+```
+
+**2. Create AGENT.md (highly recommended for best results):**
+```markdown
+# Project Agent Rules
+
+## Overview
+Brief description of your project and its purpose.
+
+## Architecture
+Key architectural decisions and patterns used in this project.
+
+## Development Workflow
+How features are developed, tested, and documented.
+
+## Code Style & Conventions
+Naming conventions, file organization, coding standards.
+
+## Documentation Standards
+How features should be documented, what sections are required.
+```
+
+**3. Ensure project context files exist:**
+- `README.md` - Project overview and setup instructions
+- `package.json` - Project metadata and dependencies
+- `.markdown-confluence.json` - Confluence configuration
+- `.env.example` - Environment variables structure
+
+### Generate Docs Examples
+
+**Basic documentation generation:**
+```bash
+npx md-confluence-cli@latest generate-docs
+# 🤖 Starting documentation generation...
+# 📝 Got 15432 characters of diff
+# ✅ Generated: ./FEATURE_DOC.md
+```
+
+**Generate with custom diff:**
+```bash
+npx md-confluence-cli@latest generate-docs --diff-command "git diff main..HEAD"
+# Generate docs for all changes since main branch
+```
+
+**Generate and auto-publish:**
+```bash
+npx md-confluence-cli@latest generate-docs --publish
+# Generate docs and automatically publish to Confluence
+```
+
+**Use different AI model:**
+```bash
+npx md-confluence-cli@latest generate-docs --model gpt-3.5-turbo --output ./docs/feature.md
+```
+
+### Generate Docs Command Options
+
+| Option | Alias | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--diff-command` | - | string | `git diff HEAD~1..HEAD` | Git command to get code changes |
+| `--model` | - | string | `gpt-4` | OpenAI model (gpt-4, gpt-3.5-turbo) |
+| `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path |
+| `--publish` | `-p` | boolean | `false` | Auto-publish to Confluence |
+
+### Generate Docs Workflow
+
+The generate-docs command follows this intelligent workflow:
+
+1. **Extract Code Changes** - Run git diff to get changed code
+2. **Gather Project Context** - Read multiple project files:
+   - `AGENT.md` - Project rules and conventions
+   - `README.md` - Project overview
+   - `package.json` - Dependencies and metadata
+   - `.markdown-confluence.json` - Confluence setup
+   - Environment files - Configuration structure
+3. **AI Analysis** - Send comprehensive context + code changes to OpenAI
+4. **Contextual Generation** - AI generates docs following your project's patterns
+5. **Format Output** - Generate structured Markdown documentation
+6. **Save & Publish** - Save to file and optionally publish to Confluence
+
+### Generated Documentation Format
+
+The AI generates documentation in this standardized format:
+
+```markdown
+## Feature Name
+
+Smart Confluence Sync
+
+### Summary
+
+Implemented intelligent sync logic that automatically decides whether to pull or push based on local file presence, with force override capability.
+
+### Changed Components
+
+- packages/cli/src/index.ts - Added handleSync function
+- packages/cli/README.md - Updated documentation
+
+### API / Behavior Changes
+
+- New --overwrite flag for force sync
+- Smart decision logic replaces sequential pull+push
+
+### Usage Example
+
+```bash
+confluence sync --overwrite
+```
+
+### Notes for Future Maintainers
+
+- Logic prioritizes safety: pull new files first, push existing changes
+- --overwrite bypasses safety checks for complete resync
+```
+
+### Generate Docs Best Practices
+
+- **Keep AGENT.md Updated**: Include project context for better AI understanding
+- **Use Specific Diffs**: Use `--diff-command` for feature-specific documentation
+- **Review Before Publishing**: Always check AI-generated docs for accuracy
+- **Version Control**: Commit generated docs alongside code changes
+- **Iterate**: Use multiple generations to refine documentation quality
+
+## Sync Examples
 
 **Example 1: First time sync (no local files)**
 ```bash
@@ -345,6 +491,12 @@ npx md-confluence-cli sync --overwrite
 
 # Sync specific files only
 npx md-confluence-cli sync --filter "api/**"
+
+# Generate docs from code changes
+npx md-confluence-cli generate-docs
+
+# Generate and auto-publish docs
+npx md-confluence-cli generate-docs --publish
 
 # Pull a single page from Confluence
 npx md-confluence-cli pull <pageId>

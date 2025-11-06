@@ -16,6 +16,10 @@ import {
 } from "md-confluence-lib";
 import { PuppeteerMermaidRenderer } from "md-confluence-mermaid-puppeteer-renderer";
 import { ConfluenceClient } from "confluence.js";
+// @ts-ignore
+import OpenAI from "openai";
+import { execSync } from "child_process";
+import { readFileSync, existsSync } from "fs";
 
 // Setup common dependencies
 async function setupDependencies() {
@@ -698,6 +702,279 @@ async function performPush(adaptor: any, settingLoader: any, confluenceClient: a
   }
 }
 
+// Gather comprehensive project context from multiple sources
+async function gatherProjectContext(): Promise<string> {
+  const contextParts: string[] = [];
+
+  // 1. Read AGENT.md (highest priority - project rules and conventions)
+  try {
+    if (existsSync("./AGENT.md")) {
+      const agentContent = readFileSync("./AGENT.md", "utf8");
+      contextParts.push(`=== PROJECT AGENT RULES ===\n${agentContent}\n`);
+    }
+  } catch (error) {
+    // Continue without AGENT.md
+  }
+
+  // 2. Read README.md (project overview and setup)
+  try {
+    if (existsSync("./README.md")) {
+      const readmeContent = readFileSync("./README.md", "utf8");
+      contextParts.push(`=== PROJECT README ===\n${readmeContent}\n`);
+    }
+  } catch (error) {
+    // Continue without README.md
+  }
+
+  // 3. Read package.json (project metadata and dependencies)
+  try {
+    if (existsSync("./package.json")) {
+      const packageJson = JSON.parse(readFileSync("./package.json", "utf8"));
+      const packageInfo = {
+        name: packageJson.name,
+        version: packageJson.version,
+        description: packageJson.description,
+        main: packageJson.main,
+        scripts: packageJson.scripts,
+        dependencies: Object.keys(packageJson.dependencies || {}),
+        devDependencies: Object.keys(packageJson.devDependencies || {}),
+        workspaces: packageJson.workspaces
+      };
+      contextParts.push(`=== PROJECT PACKAGE INFO ===\n${JSON.stringify(packageInfo, null, 2)}\n`);
+    }
+  } catch (error) {
+    // Continue without package.json
+  }
+
+  // 4. Read .markdown-confluence.json if exists (Confluence configuration)
+  try {
+    if (existsSync("./.markdown-confluence.json")) {
+      const confluenceConfig = JSON.parse(readFileSync("./.markdown-confluence.json", "utf8"));
+      // Remove sensitive info
+      const safeConfig = { ...confluenceConfig };
+      delete safeConfig.atlassianUserName;
+      delete safeConfig.atlassianApiToken;
+
+      contextParts.push(`=== CONFLUENCE CONFIGURATION ===\n${JSON.stringify(safeConfig, null, 2)}\n`);
+    }
+  } catch (error) {
+    // Continue without confluence config
+  }
+
+  // 5. Read any .env.example or similar files for environment understanding
+  const envFiles = [".env.example", ".env.local", ".env"];
+  for (const envFile of envFiles) {
+    try {
+      if (existsSync(envFile)) {
+        const envContent = readFileSync(envFile, "utf8");
+        // Only include non-sensitive env vars (those without values)
+        const safeEnvLines = envContent
+          .split("\n")
+          .filter(line => line.includes("=") && !line.includes("SECRET") && !line.includes("KEY") && !line.includes("TOKEN"))
+          .join("\n");
+        if (safeEnvLines.trim()) {
+          contextParts.push(`=== ENVIRONMENT VARIABLES (${envFile}) ===\n${safeEnvLines}\n`);
+        }
+        break; // Only read one env file
+      }
+    } catch (error) {
+      // Continue
+    }
+  }
+
+  // 6. Get basic project structure info
+  try {
+    const projectStructure = execSync("find . -type f -name '*.md' -o -name '*.ts' -o -name '*.js' -o -name '*.json' | head -20", {
+      encoding: "utf8",
+      cwd: process.cwd()
+    });
+    contextParts.push(`=== PROJECT FILE STRUCTURE ===\n${projectStructure}\n`);
+  } catch (error) {
+    // Continue without project structure
+  }
+
+  return contextParts.join("\n");
+}
+
+// Generate documentation from code changes using OpenAI
+async function handleGenerateDocs(options: any) {
+  console.log(chalk.blue("🤖 Starting documentation generation..."));
+
+  try {
+    // Check OpenAI API key
+    const openaiApiKey = process.env['OPENAI_API_KEY'];
+    if (!openaiApiKey) {
+      console.error(
+        chalk.red(
+          boxen(
+            "OpenAI API key is required. Set OPENAI_API_KEY environment variable.",
+            { padding: 1 },
+          ),
+        ),
+      );
+      process.exit(1);
+    }
+
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+    });
+
+    // Get git diff
+    const diffSpinner = ora("Getting code changes...").start();
+    let diff = "";
+    try {
+      diff = execSync(options.diffCommand || "git diff HEAD~1..HEAD", {
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      });
+    } catch (error) {
+      diffSpinner.warn(chalk.yellow("Could not get git diff, using empty diff"));
+    }
+
+    if (!diff.trim()) {
+      diffSpinner.warn(chalk.yellow("No code changes found"));
+      // Still proceed with empty diff
+    } else {
+      diffSpinner.succeed(chalk.green(`Got ${diff.length} characters of diff`));
+    }
+
+    // Gather comprehensive project context
+    const projectContext = await gatherProjectContext();
+
+    // Generate documentation
+    const generateSpinner = ora("Generating documentation with AI...").start();
+
+    const prompt = `You are a senior software engineer working on this specific project. ${projectContext ? `Here is comprehensive information about the project you are working on:\n\n${projectContext}` : 'No project context provided.'}
+
+Based on the code changes below, create a **new feature documentation** entry that is consistent with the project's conventions, architecture, and existing patterns.
+
+Format output strictly in **Markdown**:
+
+## Feature Name
+
+<short descriptive name following project naming conventions>
+
+### Summary
+
+<what changed and why, explaining the business/technical rationale>
+
+### Changed Components
+
+- <list specific components or modules changed, following project structure>
+
+### API / Behavior Changes
+
+- <any new APIs, changed behaviors, or breaking changes>
+
+### Usage Example
+
+\`\`\`js
+<example code showing how to use this feature, following project patterns>
+\`\`\`
+
+### Notes for Future Maintainers
+
+- <important implications, edge cases, or maintenance considerations>
+
+--- CODE CHANGES ---
+
+${diff}
+
+Remember to follow the project's established patterns, naming conventions, and architectural decisions from the provided context.`;
+
+    const response = await openai.chat.completions.create({
+      model: options.model || "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You produce concise, accurate developer documentation. Focus on what changed and why."
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 2000,
+    });
+
+    const markdown = response.choices[0]?.message?.content;
+    if (!markdown) {
+      throw new Error("No response from OpenAI API");
+    }
+
+    generateSpinner.succeed(chalk.green("Documentation generated successfully"));
+
+    // Save to file
+    const { writeFileSync } = await import("fs");
+    const outputPath = options.output || "./FEATURE_DOC.md";
+    writeFileSync(outputPath, markdown);
+
+    console.log(chalk.green(`✅ Generated: ${outputPath}`));
+    console.log(chalk.gray("📄 Preview:"));
+    console.log(chalk.gray("─".repeat(50)));
+    console.log(markdown.split("\n").slice(0, 10).join("\n"));
+    console.log(chalk.gray("─".repeat(50)));
+    console.log(chalk.gray("(See full documentation in the file)"));
+
+    // Optionally publish to Confluence
+    if (options.publish) {
+      console.log(chalk.blue("\n📤 Publishing to Confluence..."));
+
+      // Create a temporary markdown file for publishing
+      const tempFile = `./temp_feature_doc_${Date.now()}.md`;
+      writeFileSync(tempFile, markdown);
+
+      try {
+        const { adaptor, settingLoader, confluenceClient, mermaidRenderer } =
+          await setupDependencies();
+
+        const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [
+          new MermaidRendererPlugin(mermaidRenderer),
+        ]);
+
+        const publishResults = await publisher.publish(tempFile);
+
+        let publishSuccessCount = 0;
+
+        publishResults.forEach((file: any) => {
+          if (file.successfulUploadResult) {
+            publishSuccessCount++;
+          }
+        });
+
+        if (publishSuccessCount > 0) {
+          console.log(chalk.green(`✅ Published feature documentation to Confluence`));
+        } else {
+          console.log(chalk.red(`❌ Failed to publish feature documentation`));
+        }
+
+      } catch (publishError) {
+        console.log(chalk.yellow(`⚠️ Could not publish to Confluence: ${publishError instanceof Error ? publishError.message : String(publishError)}`));
+      } finally {
+        // Clean up temp file
+        try {
+          const { unlinkSync } = await import("fs");
+          unlinkSync(tempFile);
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error(
+      chalk.red(
+        boxen(
+          `Documentation Generation Error: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { padding: 1 },
+        ),
+      ),
+    );
+    console.log(chalk.yellow("💡 Make sure OPENAI_API_KEY is set and you have internet connection"));
+    process.exit(1);
+  }
+}
+
 // Main CLI setup
 yargs(hideBin(process.argv))
   .scriptName("confluence")
@@ -870,6 +1147,38 @@ yargs(hideBin(process.argv))
     },
     async (argv: any) => {
       await handleSync(argv);
+    },
+  )
+  .command(
+    "generate-docs",
+    "Generate documentation from code changes using OpenAI",
+    (yargs) => {
+      yargs
+        .option("diff-command", {
+          type: "string",
+          default: "git diff HEAD~1..HEAD",
+          describe: "Git command to get code changes",
+        })
+        .option("model", {
+          type: "string",
+          default: "gpt-4",
+          describe: "OpenAI model to use (gpt-4, gpt-3.5-turbo, etc.)",
+        })
+        .option("output", {
+          alias: "o",
+          type: "string",
+          default: "./FEATURE_DOC.md",
+          describe: "Output file path for generated documentation",
+        })
+        .option("publish", {
+          alias: "p",
+          type: "boolean",
+          default: false,
+          describe: "Automatically publish generated docs to Confluence",
+        });
+    },
+    async (argv: any) => {
+      await handleGenerateDocs(argv);
     },
   )
   .demandCommand(1, "You need at least one command before moving on")
