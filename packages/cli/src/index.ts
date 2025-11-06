@@ -1136,6 +1136,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
                        error?.message?.includes('Provisioned Throughput');
 
     if (isRateLimit) {
+      console.log('\n')
       console.error(
         chalk.red(
           boxen(
@@ -1165,6 +1166,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
 
 // Custom argument preprocessor for feature names with spaces
 export function preprocessFeatureArgs(args: string[]): string[] {
+  console.log('🔍 Debug: preprocessFeatureArgs input:', args);
   const processedArgs: string[] = [];
   let i = 0;
 
@@ -1213,6 +1215,7 @@ export function preprocessFeatureArgs(args: string[]): string[] {
     }
   }
 
+  console.log('🔍 Debug: preprocessFeatureArgs output:', processedArgs);
   return processedArgs;
 }
 
