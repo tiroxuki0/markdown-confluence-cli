@@ -1001,8 +1001,8 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
 
     // Create default filename from feature name
     const featureFilename = options.feature
-      ? options.feature.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md'
-      : 'new_feature_docs.md';
+      ? options.feature.toLowerCase().replace(/[^a-z0-9]/g, '_') + '.md'
+      : 'new_feature.md';
 
     let outputPath = options.output || `./${featureFilename}`;
 
@@ -1020,10 +1020,8 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
 
     // Format feature name for title (convert underscores/spaces to title case)
     const formattedTitle = options.feature
-      ? options.feature
-          .replace(/[_-]/g, ' ')
+      ? options.feature : featureFilename.replace(/[_-]/g, ' ')
           .replace(/\b\w/g, (l: string) => l.toUpperCase())
-      : 'New Feature';
 
     const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n\n\n${markdown}`;
 
