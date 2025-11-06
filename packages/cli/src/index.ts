@@ -1069,9 +1069,6 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
     const formattedTitle = options.feature
       ? options.feature : 'New Feature'
 
-    console.log(chalk.blue(`🔍 Debug: options.feature = "${options.feature}"`));
-    console.log(chalk.blue(`🔍 Debug: formattedTitle = "${formattedTitle}"`));
-
     const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
@@ -1166,7 +1163,6 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
 
 // Custom argument preprocessor for feature names with spaces
 export function preprocessFeatureArgs(args: string[]): string[] {
-  console.log('🔍 Debug: preprocessFeatureArgs input:', args);
   const processedArgs: string[] = [];
   let i = 0;
 
@@ -1215,7 +1211,6 @@ export function preprocessFeatureArgs(args: string[]): string[] {
     }
   }
 
-  console.log('🔍 Debug: preprocessFeatureArgs output:', processedArgs);
   return processedArgs;
 }
 
