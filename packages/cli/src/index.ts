@@ -793,6 +793,46 @@ async function getProjectStructure(rootDir: string, maxDepth: number = 4): Promi
   return tree || "No project structure found";
 }
 
+// Retry function with exponential backoff for API rate limiting
+export async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 2000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+
+      // Check if it's a rate limiting error (429)
+      const isRateLimit = error?.status === 429 ||
+                         error?.code === 429 ||
+                         error?.message?.includes('429') ||
+                         error?.message?.includes('rate limit') ||
+                         error?.message?.includes('Provisioned Throughput');
+
+      if (!isRateLimit || attempt === maxRetries) {
+        // If not rate limit error or max retries reached, throw immediately
+        throw error;
+      }
+
+      // Calculate delay with exponential backoff and jitter
+      const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      const delaySeconds = Math.ceil(delay / 1000);
+
+      console.log(chalk.yellow(`🤖 AI đang mệt... thử lại lần ${attempt}/${maxRetries} sau ${delaySeconds} giây...`));
+      console.log(chalk.gray(`   Lỗi: ${error?.message || 'Rate limiting'}`));
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+}
+
 // Gather comprehensive project context from multiple sources
 async function gatherProjectContext(): Promise<string> {
   const contextParts: string[] = [];
@@ -970,16 +1010,24 @@ ${diff}
 
 IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, sub-headings beyond H3, or complex hierarchies. Focus on clarity over complexity.`;
 
-    const response = await openai.chat.completions.create({
-      model: options.model || "gemini-2.0-flash",
-      messages: [
-        {
-          role: "system",
-          content: "You produce concise, accurate developer documentation. Focus on what changed and why."
-        },
-        { role: "user", content: prompt }
-      ],
-    });
+    // Use retry logic for API calls to handle rate limiting
+    const maxRetries = options.maxRetries || 3;
+    const retryDelay = options.retryDelay || 3000;
+
+    const response = await retryWithBackoff(
+      () => openai.chat.completions.create({
+        model: options.model || "gemini-2.0-flash",
+        messages: [
+          {
+            role: "system",
+            content: "You produce concise, accurate developer documentation. Focus on what changed and why."
+          },
+          { role: "user", content: prompt }
+        ],
+      }),
+      maxRetries,
+      retryDelay
+    );
 
     let markdown = response.choices[0]?.message?.content;
     if (!markdown) {
@@ -1077,24 +1125,89 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
       }
     }
 
-  } catch (error) {
-    console.error(
-      chalk.red(
-        boxen(
-          `Documentation Generation Error: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-          { padding: 1 },
+  } catch (error: any) {
+    const isRateLimit = error?.status === 429 ||
+                       error?.code === 429 ||
+                       error?.message?.includes('429') ||
+                       error?.message?.includes('rate limit') ||
+                       error?.message?.includes('Provisioned Throughput');
+
+    if (isRateLimit) {
+      console.error(
+        chalk.red(
+          boxen(
+            `🤖 AI is tired!\n\n` +
+            `Lỗi: ${error?.message || 'Rate limiting exceeded'}\n\n` +
+            `💡 Please try again later or:\n` +
+            `   • Switch to a different model`,
+            { padding: 1 },
+          ),
         ),
-      ),
-    );
-    console.log(chalk.yellow("💡 Make sure OPENAI_API_KEY is set and you have internet connection"));
+      );
+    } else {
+      console.error(
+        chalk.red(
+          boxen(
+            `Documentation Generation Error: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            { padding: 1 },
+          ),
+        ),
+      );
+      console.log(chalk.yellow("💡 Make sure OPENAI_API_KEY is set and you have internet connection"));
+    }
     process.exit(1);
   }
 }
 
+// Custom argument preprocessor for feature names with spaces
+export function preprocessFeatureArgs(args: string[]): string[] {
+  const processedArgs: string[] = [];
+  let i = 0;
+
+  while (i < args.length) {
+    const arg = args[i];
+
+    if (!arg) {
+      i++;
+      continue;
+    }
+
+    // Handle --feature or -f flag
+    if (arg === '--feature' || arg === '-f') {
+      processedArgs.push(arg);
+      i++; // Move to next argument
+
+      // Collect all following arguments until we hit another flag
+      let featureName = '';
+      while (i < args.length && args[i] && !args[i]!.startsWith('-')) {
+        // Remove surrounding quotes if present
+        const currentArg = args[i]!;
+        const cleanArg = currentArg.replace(/^["']|["']$/g, '');
+        featureName += (featureName ? ' ' : '') + cleanArg;
+        i++;
+      }
+
+      if (featureName) {
+        processedArgs.push(featureName);
+      } else {
+        // No feature name provided, yargs will handle the error
+        i--; // Back up so yargs sees the missing value
+      }
+    } else {
+      processedArgs.push(arg);
+      i++;
+    }
+  }
+
+  return processedArgs;
+}
+
 // Main CLI setup
-yargs(hideBin(process.argv))
+const processedArgs = preprocessFeatureArgs(hideBin(process.argv));
+
+yargs(processedArgs)
   .scriptName("confluence")
   .usage("$0 <cmd> [args]")
   .command(
@@ -1298,6 +1411,16 @@ yargs(hideBin(process.argv))
           alias: "f",
           type: "string",
           describe: "Feature name to use in filename and title",
+        })
+        .option("max-retries", {
+          type: "number",
+          default: 3,
+          describe: "Maximum number of retries for rate limiting (default: 3)",
+        })
+        .option("retry-delay", {
+          type: "number",
+          default: 3000,
+          describe: "Base delay between retries in milliseconds (default: 3000)",
         });
     },
     async (argv: any) => {

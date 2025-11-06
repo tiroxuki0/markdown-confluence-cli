@@ -132,10 +132,20 @@ npx md-confluence-cli@latest generate-docs --output ./docs
 # Creates ./docs/FEATURE_DOC.md automatically
 ```
 
-**Generate with custom feature name:**
+**Generate with custom feature name (supports spaces):**
 ```bash
 npx md-confluence-cli@latest generate-docs --feature "Smart Confluence Sync"
 # Creates SMART_CONFLUENCE_SYNC.md with frontmatter and title
+
+# Or without quotes (CLI automatically handles spaces):
+npx md-confluence-cli@latest generate-docs --feature Smart Confluence Sync
+# Both formats work identically
+```
+
+**Handle rate limiting (AI busy):**
+```bash
+npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
+# Retry up to 5 times with 5-second base delay between attempts
 ```
 
 ### Generate Docs Command Options
@@ -145,8 +155,10 @@ npx md-confluence-cli@latest generate-docs --feature "Smart Confluence Sync"
 | `--diff-command` | - | string | `git diff HEAD~1..HEAD` | Git command to get code changes |
 | `--model` | - | string | `gpt-4` | OpenAI model (gpt-4, gpt-3.5-turbo) |
 | `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path (or directory for default filename) |
-| `--feature` | `-f` | string | - | Feature name for filename and title (default: "Feature Name") |
+| `--feature` | `-f` | string | - | Feature name for filename and title (supports spaces, default: "Feature Name") |
 | `--publish` | `-p` | boolean | `false` | Auto-publish to Confluence |
+| `--max-retries` | - | number | `3` | Maximum retry attempts for rate limiting |
+| `--retry-delay` | - | number | `3000` | Base delay between retries (milliseconds) |
 
 ### Generate Docs Workflow
 
@@ -163,6 +175,39 @@ The generate-docs command follows this intelligent workflow:
 4. **Contextual Generation** - AI generates docs following your project's patterns
 5. **Format Output** - Generate structured Markdown documentation
 6. **Save & Publish** - Save to file and optionally publish to Confluence
+
+### Rate Limiting & Retry Logic
+
+The generate-docs command includes intelligent rate limiting handling:
+
+**Automatic Retry on 429 Errors:**
+- Detects rate limiting errors automatically
+- Uses exponential backoff (2x delay each retry)
+- Shows friendly Vietnamese messages: "🤖 AI đang mệt... thử lại lần X sau Y giây..."
+- Configurable retry attempts and delay
+
+**Rate Limiting Examples:**
+```bash
+# Default: 3 retries with 3-second base delay
+npx md-confluence-cli@latest generate-docs
+
+# More aggressive retry for busy periods
+npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
+
+# Quick retry for testing
+npx md-confluence-cli@latest generate-docs --max-retries 2 --retry-delay 1000
+```
+
+**When AI is Too Busy:**
+If all retries fail, you'll see:
+```
+🤖 AI vẫn đang mệt sau 3 lần thử!
+
+💡 Hãy thử lại sau vài phút hoặc:
+   • Giảm --max-retries xuống 1-2 lần
+   • Tăng --retry-delay lên 5000-10000ms
+   • Chuyển sang model khác: --model gpt-3.5-turbo
+```
 
 ### Generated Documentation Format
 
