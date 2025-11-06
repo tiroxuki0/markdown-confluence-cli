@@ -702,6 +702,97 @@ async function performPush(adaptor: any, settingLoader: any, confluenceClient: a
   }
 }
 
+// Get comprehensive project structure as a tree
+async function getProjectStructure(rootDir: string, maxDepth: number = 4): Promise<string> {
+  const { readdirSync, statSync } = await import('fs');
+  const { join } = await import('path');
+
+  function buildTree(dir: string, prefix: string = "", depth: number = 0): string {
+    if (depth > maxDepth) {
+      return "";
+    }
+
+    let result = "";
+    let items: string[];
+
+    try {
+      items = readdirSync(dir).sort((a, b) => {
+        // Sort: directories first, then files, alphabetically
+        const aStat = statSync(join(dir, a));
+        const bStat = statSync(join(dir, b));
+        const aIsDir = aStat.isDirectory();
+        const bIsDir = bStat.isDirectory();
+
+        if (aIsDir && !bIsDir) return -1;
+        if (!aIsDir && bIsDir) return 1;
+        return a.localeCompare(b);
+      });
+    } catch (error) {
+      return "";
+    }
+
+    items.forEach((item, index) => {
+      const fullPath = join(dir, item);
+      const isLast = index === items.length - 1;
+      const connector = isLast ? "└── " : "├── ";
+      const nextPrefix = prefix + (isLast ? "    " : "│   ");
+
+      try {
+        const stat = statSync(fullPath);
+
+        // Skip hidden files/directories and common build artifacts
+        if (item.startsWith('.') ||
+            item === 'node_modules' ||
+            item === 'dist' ||
+            item === 'build' ||
+            item === '.git' ||
+            item === 'coverage' ||
+            item === '.next' ||
+            item === '.nuxt' ||
+            item === '.vuepress' ||
+            item === '_site' ||
+            item === 'public' ||
+            item === 'static') {
+          return;
+        }
+
+        if (stat.isDirectory()) {
+          result += prefix + connector + item + "/\n";
+          const subTree = buildTree(fullPath, nextPrefix, depth + 1);
+          if (subTree) {
+            result += subTree;
+          }
+        } else {
+          // Only show important file types
+          const ext = item.split('.').pop()?.toLowerCase();
+          if (['md', 'ts', 'js', 'tsx', 'jsx', 'json', 'yml', 'yaml', 'toml', 'config', 'env'].includes(ext || '') ||
+              item === 'Dockerfile' ||
+              item === 'Makefile' ||
+              item === 'package.json' ||
+              item === 'tsconfig.json' ||
+              item === 'README' ||
+              item.startsWith('README.') ||
+              item === 'AGENT' ||
+              item.startsWith('AGENT.') ||
+              item === 'CHANGELOG' ||
+              item.startsWith('CHANGELOG.') ||
+              item === 'CONTRIBUTING' ||
+              item.startsWith('CONTRIBUTING.')) {
+            result += prefix + connector + item + "\n";
+          }
+        }
+      } catch (error) {
+        // Skip files we can't access
+      }
+    });
+
+    return result;
+  }
+
+  const tree = buildTree(rootDir);
+  return tree || "No project structure found";
+}
+
 // Gather comprehensive project context from multiple sources
 async function gatherProjectContext(): Promise<string> {
   const contextParts: string[] = [];
@@ -782,12 +873,9 @@ async function gatherProjectContext(): Promise<string> {
     }
   }
 
-  // 6. Get basic project structure info
+  // 6. Get comprehensive project structure info
   try {
-    const projectStructure = execSync("find . -type f -name '*.md' -o -name '*.ts' -o -name '*.js' -o -name '*.json' | head -20", {
-      encoding: "utf8",
-      cwd: process.cwd()
-    });
+    const projectStructure = await getProjectStructure(process.cwd());
     contextParts.push(`=== PROJECT FILE STRUCTURE ===\n${projectStructure}\n`);
   } catch (error) {
     // Continue without project structure
@@ -883,7 +971,7 @@ ${diff}
 IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, sub-headings beyond H3, or complex hierarchies. Focus on clarity over complexity.`;
 
     const response = await openai.chat.completions.create({
-      model: options.model || "gpt-4",
+      model: options.model || "gemini-2.0-flash",
       messages: [
         {
           role: "system",
@@ -891,7 +979,6 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
         },
         { role: "user", content: prompt }
       ],
-      temperature: 0.4,
     });
 
     let markdown = response.choices[0]?.message?.content;
@@ -931,7 +1018,14 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
       // Path doesn't exist, treat as file path
     }
 
-    const finalMarkdown = `---\nconnie-publish: true\n---\n\n\n${markdown}`;
+    // Format feature name for title (convert underscores/spaces to title case)
+    const formattedTitle = options.feature
+      ? options.feature
+          .replace(/[_-]/g, ' ')
+          .replace(/\b\w/g, (l: string) => l.toUpperCase())
+      : 'New Feature';
+
+    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n\n\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
 
