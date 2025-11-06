@@ -1069,6 +1069,9 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
     const formattedTitle = options.feature
       ? options.feature : 'New Feature'
 
+    console.log(chalk.blue(`🔍 Debug: options.feature = "${options.feature}"`));
+    console.log(chalk.blue(`🔍 Debug: formattedTitle = "${formattedTitle}"`));
+
     const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
