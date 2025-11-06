@@ -1067,9 +1067,14 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
     }
 
     const formattedTitle = options.feature
-      ? options.feature : 'New Feature'
+      ? options.feature
+          .replace(/_/g, ' ') // Replace underscores with spaces
+          .split(' ') // Split into words
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+          .join(' ') // Join back with spaces
+      : 'New Feature'
 
-    const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n${markdown}`;
+    const finalMarkdown = `---\nconnie-publish: true\ntitle: "${formattedTitle}"\n---\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
 
