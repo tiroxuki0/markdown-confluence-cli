@@ -979,6 +979,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
         },
         { role: "user", content: prompt }
       ],
+      temperature: 0.4,
     });
 
     let markdown = response.choices[0]?.message?.content;
