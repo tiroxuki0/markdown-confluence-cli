@@ -12,6 +12,17 @@ import {
   conniePerPageConfig,
 } from "../ConniePageConfig";
 
+/**
+ * Format filename to title case by replacing underscores with spaces and capitalizing words
+ */
+function formatFilenameToTitle(filename: string): string {
+  return filename
+    .replace(/_/g, ' ') // Replace underscores with spaces
+    .split(' ') // Split into words
+    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+    .join(' '); // Join back with spaces
+}
+
 export class FileSystemAdaptor implements LoaderAdaptor {
   settings: ConfluenceSettings;
 
@@ -105,10 +116,11 @@ export class FileSystemAdaptor implements LoaderAdaptor {
     const fileName = path.basename(absoluteFilePath);
 
     const extension = path.extname(fileName);
-    let pageTitle = path.basename(fileName, extension);
+    const rawFilename = path.basename(fileName, extension);
+    let pageTitle = formatFilenameToTitle(rawFilename);
 
     // If file is "index.md", use frontmatter title or folder name as page title
-    if (pageTitle.toLowerCase() === "index") {
+    if (rawFilename.toLowerCase() === "index") {
       // Prefer frontmatter title if available
       if (data && typeof data["title"] === "string" && data["title"].trim()) {
         pageTitle = data["title"];
