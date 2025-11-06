@@ -116,7 +116,7 @@ export class FileSystemAdaptor implements LoaderAdaptor {
     const fileName = path.basename(absoluteFilePath);
 
     const extension = path.extname(fileName);
-    const rawFilename = path.basename(fileName, extension);
+    let rawFilename = path.basename(fileName, extension);
     let pageTitle = formatFilenameToTitle(rawFilename);
 
     // If file is "index.md", use frontmatter title or folder name as page title
@@ -130,7 +130,7 @@ export class FileSystemAdaptor implements LoaderAdaptor {
         folderName !== path.basename(this.settings.contentRoot)
       ) {
         // Fallback to folder name
-        pageTitle = folderName;
+        pageTitle = formatFilenameToTitle(folderName);
       }
     }
 
