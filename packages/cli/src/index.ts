@@ -849,7 +849,7 @@ async function handleGenerateDocs(options: any) {
 
     const prompt = `You are a senior software engineer working on this specific project. ${projectContext ? `Here is comprehensive information about the project you are working on:\n\n${projectContext}` : 'No project context provided.'}
 
-Based on the code changes below, create a **new feature documentation** entry that is consistent with the project's conventions, architecture, and existing patterns.
+Based on the code changes below, create a **simple, flat feature documentation** entry. AVOID nested structures and complex hierarchies.
 
 Format output strictly in **Markdown**:
 
@@ -861,12 +861,9 @@ Format output strictly in **Markdown**:
 
 <what changed and why, explaining the business/technical rationale>
 
-### Changed Components
+### Changes Made
 
 - <list specific components or modules changed, following project structure>
-
-### API / Behavior Changes
-
 - <any new APIs, changed behaviors, or breaking changes>
 
 ### Usage Example
@@ -875,15 +872,15 @@ Format output strictly in **Markdown**:
 <example code showing how to use this feature, following project patterns>
 \`\`\`
 
-### Notes for Future Maintainers
+### Notes
 
-- <important implications, edge cases, or maintenance considerations>
+<important implications, edge cases, or maintenance considerations>
 
 --- CODE CHANGES ---
 
 ${diff}
 
-Remember to follow the project's established patterns, naming conventions, and architectural decisions from the provided context.`;
+IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, sub-headings beyond H3, or complex hierarchies. Focus on clarity over complexity.`;
 
     const response = await openai.chat.completions.create({
       model: options.model || "gpt-4",
