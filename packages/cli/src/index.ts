@@ -816,7 +816,7 @@ async function handleGenerateDocs(options: any) {
     }
 
     const openai = new OpenAI({
-      baseURL: process.env['OPENAI_BASE_URL'] || 'https://openrouter.ai/api/v1',
+      baseURL: process.env['OPENAI_BASE_URL'] || 'https://generativelanguage.googleapis.com/v1beta/openai/',
       apiKey: openaiApiKey,
     });
 
@@ -843,7 +843,7 @@ async function handleGenerateDocs(options: any) {
     const projectContext = await gatherProjectContext();
 
     // Generate documentation
-    const generateSpinner = ora("Generating documentation with AI...").start();
+    const generateSpinner = ora("Generating documentation...").start();
 
     const promptFeatureName = options.feature || "Feature Name";
 
@@ -894,8 +894,7 @@ Remember to follow the project's established patterns, naming conventions, and a
         },
         { role: "user", content: prompt }
       ],
-      temperature: 0.3,
-      max_tokens: 2000,
+      temperature: 0.4,
     });
 
     const markdown = response.choices[0]?.message?.content;
@@ -928,9 +927,7 @@ Remember to follow the project's established patterns, naming conventions, and a
       // Path doesn't exist, treat as file path
     }
 
-    // Always add frontmatter and title to markdown
-    const featureName = options.feature || "";
-    const finalMarkdown = `---\nconnie-publish: true\n---\n\n# \`${featureName}\`\n\n${markdown}`;
+    const finalMarkdown = `---\nconnie-publish: true\n---\n\n\n${markdown}`;
 
     writeFileSync(outputPath, finalMarkdown);
 
