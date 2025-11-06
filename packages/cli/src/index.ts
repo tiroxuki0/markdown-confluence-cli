@@ -979,7 +979,6 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
         },
         { role: "user", content: prompt }
       ],
-      temperature: 0.4,
     });
 
     let markdown = response.choices[0]?.message?.content;
@@ -1021,8 +1020,7 @@ IMPORTANT: Keep documentation FLAT and SIMPLE. Do NOT create nested sections, su
 
     // Format feature name for title (convert underscores/spaces to title case)
     const formattedTitle = options.feature
-      ? options.feature : featureFilename.replace(/[_-]/g, ' ')
-          .replace(/\b\w/g, (l: string) => l.toUpperCase())
+      ? options.feature : 'New Feature'
 
     const finalMarkdown = `---\nconnie-publish: true\nconnie-title: "${formattedTitle}"\n---\n\n\n${markdown}`;
 
