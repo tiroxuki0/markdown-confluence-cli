@@ -641,7 +641,37 @@ async function performPush(adaptor: any, settingLoader: any, confluenceClient: a
     if (pushSuccessCount > 0) {
       pushSpinner.succeed(chalk.green(`Published ${pushSuccessCount} files to Confluence`));
     } else {
-      pushSpinner.warn(chalk.yellow("No files to publish"));
+      pushSpinner.fail(chalk.red("Failed to push files to Confluence"));
+    }
+
+    // Display published file structure (attempted files)
+    if (pushSuccessCount > 0 || pushFailCount > 0) {
+      await displayPublishStructure();
+
+      // Display parent page URL when push succeeds
+      if (pushSuccessCount > 0) {
+        const urlSettings = settingLoader.load();
+
+        // Fetch parent page to get space key for URL
+        let parentPageUrl = "";
+        try {
+          const parentPage = await confluenceClient.content.getContentById({
+            id: urlSettings.confluenceParentId,
+            expand: ["space"],
+          });
+          if (parentPage.space?.key) {
+            parentPageUrl = `${urlSettings.confluenceBaseUrl}/wiki/spaces/${parentPage.space.key}/pages/${urlSettings.confluenceParentId}`;
+          }
+        } catch (error) {
+          // If we can't fetch parent page, build URL with placeholder
+          parentPageUrl = `${urlSettings.confluenceBaseUrl}/wiki/spaces/SPACE/pages/${urlSettings.confluenceParentId}`;
+        }
+
+        // Log parent page URL after summary
+        if (parentPageUrl) {
+          console.log(chalk.blue(`📍 Parent page: ${parentPageUrl}`));
+        }
+      }
     }
 
     if (pushFailCount > 0) {
