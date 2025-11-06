@@ -267,7 +267,7 @@ async function ensurePageExists(
         (ancestor) => String(ancestor.id) === topPageIdStr,
       );
 
-    if (file.contentType === "page" && !isInTree) {
+    if (file.contentType === "page" && !isInTree && !file.dontChangeParentPageId) {
       throw new Error(
         `${file.pageTitle} is trying to overwrite a page outside the page tree from the selected top page`,
       );
