@@ -126,13 +126,26 @@ npx md-confluence-cli@latest generate-docs --publish
 npx md-confluence-cli@latest generate-docs --model gpt-3.5-turbo --output ./docs/feature.md
 ```
 
+**Generate to specific directory:**
+```bash
+npx md-confluence-cli@latest generate-docs --output ./docs
+# Creates ./docs/FEATURE_DOC.md automatically
+```
+
+**Generate with custom feature name:**
+```bash
+npx md-confluence-cli@latest generate-docs --feature "Smart Confluence Sync"
+# Creates SMART_CONFLUENCE_SYNC.md with frontmatter and title
+```
+
 ### Generate Docs Command Options
 
 | Option | Alias | Type | Default | Description |
 |--------|-------|------|---------|-------------|
 | `--diff-command` | - | string | `git diff HEAD~1..HEAD` | Git command to get code changes |
 | `--model` | - | string | `gpt-4` | OpenAI model (gpt-4, gpt-3.5-turbo) |
-| `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path |
+| `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path (or directory for default filename) |
+| `--feature` | `-f` | string | - | Feature name for filename and title (default: "Feature Name") |
 | `--publish` | `-p` | boolean | `false` | Auto-publish to Confluence |
 
 ### Generate Docs Workflow
@@ -153,26 +166,28 @@ The generate-docs command follows this intelligent workflow:
 
 ### Generated Documentation Format
 
-The AI generates documentation in this standardized format:
+All generated documentation includes frontmatter and title for Confluence publishing:
 
 ```markdown
-## Feature Name
+---
+connie-publish: true
+---
+
+# `Feature Name`
 
 Smart Confluence Sync
 
 ### Summary
 
-Implemented intelligent sync logic that automatically decides whether to pull or push based on local file presence, with force override capability.
+Implemented intelligent sync logic...
 
 ### Changed Components
 
 - packages/cli/src/index.ts - Added handleSync function
-- packages/cli/README.md - Updated documentation
 
 ### API / Behavior Changes
 
 - New --overwrite flag for force sync
-- Smart decision logic replaces sequential pull+push
 
 ### Usage Example
 
@@ -183,7 +198,39 @@ confluence sync --overwrite
 ### Notes for Future Maintainers
 
 - Logic prioritizes safety: pull new files first, push existing changes
-- --overwrite bypasses safety checks for complete resync
+```
+
+**With --feature "Smart Confluence Sync":**
+```markdown
+---
+connie-publish: true
+---
+
+# `Smart Confluence Sync`
+
+Smart Confluence Sync
+
+### Summary
+
+Implemented intelligent sync logic...
+
+### Changed Components
+
+- packages/cli/src/index.ts - Added handleSync function
+
+### API / Behavior Changes
+
+- New --overwrite flag for force sync
+
+### Usage Example
+
+```bash
+confluence sync --overwrite
+```
+
+### Notes for Future Maintainers
+
+- Logic prioritizes safety: pull new files first, push existing changes
 ```
 
 ### Generate Docs Best Practices

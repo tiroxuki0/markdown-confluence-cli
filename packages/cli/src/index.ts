@@ -845,13 +845,15 @@ async function handleGenerateDocs(options: any) {
     // Generate documentation
     const generateSpinner = ora("Generating documentation with AI...").start();
 
+    const promptFeatureName = options.feature || "Feature Name";
+
     const prompt = `You are a senior software engineer working on this specific project. ${projectContext ? `Here is comprehensive information about the project you are working on:\n\n${projectContext}` : 'No project context provided.'}
 
 Based on the code changes below, create a **new feature documentation** entry that is consistent with the project's conventions, architecture, and existing patterns.
 
 Format output strictly in **Markdown**:
 
-## Feature Name
+## ${promptFeatureName}
 
 <short descriptive name following project naming conventions>
 
@@ -904,9 +906,33 @@ Remember to follow the project's established patterns, naming conventions, and a
     generateSpinner.succeed(chalk.green("Documentation generated successfully"));
 
     // Save to file
-    const { writeFileSync } = await import("fs");
-    const outputPath = options.output || "./FEATURE_DOC.md";
-    writeFileSync(outputPath, markdown);
+    const { writeFileSync, statSync } = await import("fs");
+    const { join } = await import("path");
+
+    // Create default filename from feature name
+    const featureFilename = options.feature
+      ? options.feature.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md'
+      : 'new_feature_docs.md';
+
+    let outputPath = options.output || `./${featureFilename}`;
+
+    try {
+      // Check if output path is a directory
+      const stats = statSync(outputPath);
+      if (stats.isDirectory()) {
+        // If it's a directory, create filename inside it
+        outputPath = join(outputPath, featureFilename);
+      }
+      // If it's a file path or doesn't exist, use as-is
+    } catch (error) {
+      // Path doesn't exist, treat as file path
+    }
+
+    // Always add frontmatter and title to markdown
+    const featureName = options.feature || "";
+    const finalMarkdown = `---\nconnie-publish: true\n---\n\n# \`${featureName}\`\n\n${markdown}`;
+
+    writeFileSync(outputPath, finalMarkdown);
 
     console.log(chalk.green(`✅ Generated: ${outputPath}`));
     console.log(chalk.gray("📄 Preview:"));
@@ -1176,6 +1202,11 @@ yargs(hideBin(process.argv))
           type: "boolean",
           default: false,
           describe: "Automatically publish generated docs to Confluence",
+        })
+        .option("feature", {
+          alias: "f",
+          type: "string",
+          describe: "Feature name to use in filename and title",
         });
     },
     async (argv: any) => {
