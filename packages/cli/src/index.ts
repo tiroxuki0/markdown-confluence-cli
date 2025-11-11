@@ -12,8 +12,9 @@ import { PuppeteerMermaidRenderer } from "md-confluence-mermaid-puppeteer-render
 import { ConfluenceClient } from "confluence.js"
 // @ts-ignore
 import OpenAI from "openai"
-import { execSync } from "child_process"
+import { execSync, spawn } from "child_process"
 import { readFileSync, existsSync } from "fs"
+import { createInterface } from "readline"
 
 // Setup common dependencies
 async function setupDependencies() {
@@ -797,6 +798,227 @@ async function gatherProjectContext(): Promise<string> {
   return contextParts.join("\n")
 }
 
+// Helper function to copy text to clipboard
+async function copyToClipboard(text: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const platform = process.platform
+    let command: string
+    let args: string[]
+
+    if (platform === "darwin") {
+      // macOS
+      command = "pbcopy"
+      args = []
+    } else if (platform === "linux") {
+      // Linux - try xclip first, then xsel
+      command = "xclip"
+      args = ["-selection", "clipboard"]
+    } else if (platform === "win32") {
+      // Windows
+      command = "clip"
+      args = []
+    } else {
+      resolve(false)
+      return
+    }
+
+    const child = spawn(command, args)
+    child.stdin.write(text)
+    child.stdin.end()
+
+    child.on("error", () => {
+      // If xclip fails on Linux, try xsel
+      if (platform === "linux" && command === "xclip") {
+        const xselChild = spawn("xsel", ["--clipboard", "--input"])
+        xselChild.stdin.write(text)
+        xselChild.stdin.end()
+        xselChild.on("error", () => resolve(false))
+        xselChild.on("close", (code) => resolve(code === 0))
+      } else {
+        resolve(false)
+      }
+    })
+
+    child.on("close", (code) => {
+      resolve(code === 0)
+    })
+  })
+}
+
+// Helper function to wait for user input
+function waitForEnter(message: string): Promise<void> {
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    })
+
+    rl.question(message, () => {
+      rl.close()
+      resolve()
+    })
+  })
+}
+
+// Generate prompt for IDE to create documentation
+async function handleGeneratePrompt(options: any) {
+  console.log(chalk.blue("📝 Generating prompt..."))
+
+  try {
+    // Gather comprehensive project context
+    const contextSpinner = ora("Gathering project context...").start()
+    const projectContext = await gatherProjectContext()
+    contextSpinner.succeed(chalk.green("Project context gathered"))
+
+    const promptFeatureName = options.feature || "Feature Name"
+    const targetFile = options.targetFile || "FEATURE_DOC.md"
+
+    // Create comprehensive QA-focused prompt for IDE
+    const prompt = `# QA-Focused Documentation Generation Task
+
+You are an expert technical documentation specialist, with strong experience in generating QA-friendly documentation. Your task is to generate comprehensive documentation by analyzing the codebase and project context, emphasizing **feature flows, testable steps, and QA validation points**.
+
+## Context
+
+You have access to:
+- Full project codebase (via Cursor's codebase search)
+- AGENT.md file (project rules and conventions)
+- README.md file (project overview)
+- Project structure and configuration files
+
+${projectContext ? `## Project Context\n\n${projectContext}\n` : ""}
+
+## Task
+
+Generate comprehensive documentation for: **${promptFeatureName}**  
+
+Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
+
+### Documentation Requirements
+
+1. **Overview**
+   - Clear description of the topic/feature
+   - Purpose, goals, and expected outcomes
+   - Key concepts, benefits, and impact on users
+
+2. **Feature Flow / User Journey**
+   - Step-by-step flow of the feature from start to finish
+   - Visual representation suggestion (e.g., flow diagram, sequence diagram)
+   - Pre-conditions and post-conditions for each step
+   - Expected behavior at each step
+
+3. **Technical Details**
+   - Architecture and design patterns
+   - Implementation approach and key modules
+   - Dependencies and integrations
+   - Technical specifications relevant to QA (e.g., validations, triggers, constraints)
+
+4. **QA & Testing Guide**
+   - Test scenarios and use cases (happy path + edge cases)
+   - Input/output examples
+   - Error handling and expected error messages
+   - Steps for reproducing issues
+   - Suggested exploratory testing points
+   - Integration points to verify
+
+5. **Usage & Examples**
+   - Practical usage examples
+   - Code snippets (if applicable)
+   - Common scenarios and patterns
+
+6. **Additional Sections** (as relevant)
+   - Configuration options
+   - Troubleshooting guide
+   - Performance considerations
+   - Security implications
+   - Related documentation links
+
+### Formatting Guidelines
+
+- Use clear markdown formatting
+- Include code blocks with syntax highlighting when applicable
+- Use tables for structured information
+- Use lists and nested structures for flows and steps
+- Suggest diagrams/visuals for complex flows
+- Include frontmatter for Confluence publishing:
+  \`\`\`yaml
+  ---
+  connie-publish: true
+  title: "${promptFeatureName}"
+  ---
+  \`\`\`
+
+### Output
+
+Create the documentation in: **${targetFile}**  
+
+The documentation should be:
+- Professional and QA-friendly
+- Clear to both technical and non-technical stakeholders
+- Comprehensive yet concise
+- Following the project's documentation standards from AGENT.md
+
+## Instructions for Cursor
+
+1. Review the project context above to understand the project structure and conventions
+2. Search the codebase using Cursor's codebase search to understand relevant implementations
+3. Generate comprehensive QA-focused documentation following the requirements above
+4. Save the documentation to ${targetFile}
+5. Ensure the documentation follows the project's style guide from AGENT.md
+
+---
+
+**Ready to generate documentation. Please proceed with the analysis and documentation creation.**`
+
+    const { writeFileSync } = await import("fs")
+
+    if (options.output) {
+      // Save to file
+      writeFileSync(options.output, prompt)
+      console.log(chalk.green(`✅ Prompt saved to: ${options.output}`))
+      console.log(chalk.blue("\n📋 Prompt Preview:"))
+      console.log(chalk.gray("─".repeat(80)))
+      // Show first 20 lines as preview
+      const previewLines = prompt.split("\n").slice(0, 20).join("\n")
+      console.log(chalk.gray(previewLines))
+      console.log(chalk.gray("..."))
+      console.log(chalk.gray("─".repeat(80)))
+      
+      // Offer to copy to clipboard
+      console.log(chalk.blue("\n📋 Copy to Clipboard:"))
+      await waitForEnter(chalk.yellow("   Press Enter to copy prompt to clipboard... "))
+      
+      const copied = await copyToClipboard(prompt)
+      if (copied) {
+        console.log(chalk.green("   ✅ Copied to clipboard! Press Ctrl+V to paste in your IDE"))
+      } else {
+        console.log(chalk.yellow("   ⚠️  Could not copy to clipboard automatically. Please copy manually from the file."))
+      }
+    } else {
+      // Print to console
+      console.log(chalk.blue("\n" + "=".repeat(80)))
+      console.log(chalk.blue("📋 PROMPT FOR IDE"))
+      console.log(chalk.blue("=".repeat(80) + "\n"))
+      console.log(prompt)
+      console.log(chalk.blue("\n" + "=".repeat(80)))
+      
+      // Offer to copy to clipboard
+      console.log(chalk.blue("📋 Copy to Clipboard:"))
+      await waitForEnter(chalk.yellow("   Press Enter to copy prompt to clipboard... "))
+      
+      const copied = await copyToClipboard(prompt)
+      if (copied) {
+        console.log(chalk.green("   ✅ Copied to clipboard! Press Ctrl+V to paste in your IDE"))
+      } else {
+        console.log(chalk.yellow("   ⚠️  Could not copy to clipboard automatically. Please copy manually from above."))
+      }
+    }
+  } catch (error) {
+    console.error(chalk.red(boxen(`Prompt Generation Error: ${error instanceof Error ? error.message : String(error)}`, { padding: 1 })))
+    process.exit(1)
+  }
+}
+
 // Generate documentation from code changes using OpenAI
 async function handleGenerateDocs(options: any) {
   console.log(chalk.blue("🤖 Starting documentation generation..."))
@@ -1311,6 +1533,31 @@ yargs(processedArgs)
     },
     async (argv: any) => {
       await handleGenerateDocs(argv)
+    }
+  )
+  .command(
+    "generate-prompt",
+    "Generate a prompt for IDE to create documentation",
+    (yargs) => {
+      yargs
+        .option("output", {
+          alias: "o",
+          type: "string",
+          describe: "Output file path for the prompt (default: print to console)"
+        })
+        .option("feature", {
+          alias: "f",
+          type: "string",
+          describe: "Feature name to include in the prompt"
+        })
+        .option("target-file", {
+          alias: "t",
+          type: "string",
+          describe: "Target file path where documentation should be created"
+        })
+    },
+    async (argv: any) => {
+      await handleGeneratePrompt(argv)
     }
   )
   .demandCommand(1, "You need at least one command before moving on")
