@@ -860,6 +860,18 @@ function waitForEnter(message: string): Promise<void> {
   })
 }
 
+// Helper function to convert feature name to filename
+function featureNameToFilename(featureName: string): string {
+  return featureName
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, "") // Remove special characters except underscores
+    .replace(/_+/g, "_") // Replace multiple underscores with single underscore
+    .replace(/^_|_$/g, "") // Remove leading/trailing underscores
+    + ".md"
+}
+
 // Generate prompt for IDE to create documentation
 async function handleGeneratePrompt(options: any) {
   console.log(chalk.blue("📝 Generating prompt..."))
@@ -871,12 +883,21 @@ async function handleGeneratePrompt(options: any) {
     contextSpinner.succeed(chalk.green("Project context gathered"))
 
     const promptFeatureName = options.feature || "Feature Name"
-    const targetFile = options.targetFile || "FEATURE_DOC.md"
+    
+    // outputFileName: tên file (từ feature name)
+    const outputFileName = options.feature ? featureNameToFilename(options.feature) : "FEATURE_DOC.md"
+    
+    // outputPath: đường dẫn/nơi đặt file (từ options.output, nếu có)
+    // outputFile: đường dẫn đầy đủ trong source structure (outputPath + outputFileName)
+    const { join } = await import("path")
+    const outputFile = options.output ? join(options.output, outputFileName) : outputFileName
 
     // Create comprehensive QA-focused prompt for IDE
     const prompt = `# QA-Focused Documentation Generation Task
 
 You are an expert technical documentation specialist, with strong experience in generating QA-friendly documentation. Your task is to generate comprehensive documentation by analyzing the codebase and project context, emphasizing **feature flows, testable steps, and QA validation points**.
+
+**Critical Requirement:** The documentation must be QA-friendly and accessible to people who know nothing about the feature - they should be able to read and understand it without prior knowledge.
 
 ## Context
 
@@ -894,53 +915,34 @@ Generate comprehensive documentation for: **${promptFeatureName}**
 
 Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
 
+**Key Principle:** Write as if the reader has zero knowledge about this feature. Use simple language, explain technical terms, and provide context for every concept. The documentation should be understandable by both QA engineers and non-technical stakeholders.
+
 ### Documentation Requirements
 
 1. **Overview**
-   - Clear description of the topic/feature
-   - Purpose, goals, and expected outcomes
-   - Key concepts, benefits, and impact on users
+   - Clear description, purpose, goals, and expected outcomes in simple terms (avoid jargon without explanation)
 
 2. **Feature Flow / User Journey**
-   - Step-by-step flow of the feature from start to finish
-   - Visual representation suggestion (e.g., flow diagram, sequence diagram)
-   - Pre-conditions and post-conditions for each step
-   - Expected behavior at each step
+   - Step-by-step flow with pre/post-conditions and expected behavior at each step (write so someone unfamiliar can follow along)
+   - Suggest visual representation (flow diagram, sequence diagram) for complex flows
 
 3. **Technical Details**
-   - Architecture and design patterns
-   - Implementation approach and key modules
-   - Dependencies and integrations
-   - Technical specifications relevant to QA (e.g., validations, triggers, constraints)
+   - Architecture, key modules, dependencies, and integrations explained in accessible terms
+   - QA-relevant specifications (validations, triggers, constraints) with explanations of what they mean and why QA should care
 
 4. **QA & Testing Guide**
-   - Test scenarios and use cases (happy path + edge cases)
-   - Input/output examples
-   - Error handling and expected error messages
-   - Steps for reproducing issues
-   - Suggested exploratory testing points
-   - Integration points to verify
+   - Test scenarios (happy path + edge cases) in clear step-by-step format with concrete input/output examples
+   - Error handling with expected messages and explanations, plus steps to reproduce issues
+   - Integration points and exploratory testing suggestions (explain what to check and why)
 
 5. **Usage & Examples**
-   - Practical usage examples
-   - Code snippets (if applicable)
-   - Common scenarios and patterns
-
-6. **Additional Sections** (as relevant)
-   - Configuration options
-   - Troubleshooting guide
-   - Performance considerations
-   - Security implications
-   - Related documentation links
+   - Practical examples with real-world scenarios and code snippets (if applicable) with explanatory comments
 
 ### Formatting Guidelines
 
-- Use clear markdown formatting
-- Include code blocks with syntax highlighting when applicable
-- Use tables for structured information
-- Use lists and nested structures for flows and steps
+- Use clear markdown with code blocks, tables, and nested lists for structured information
 - Suggest diagrams/visuals for complex flows
-- Include frontmatter for Confluence publishing:
+- Include frontmatter for Confluence:
   \`\`\`yaml
   ---
   connie-publish: true
@@ -950,55 +952,28 @@ Focus on making it clear for QA engineers to **understand the feature flow, vali
 
 ### Output
 
-Create the documentation in: **${targetFile}**  
+Create the documentation in: **${outputFile}**  
 
-The documentation should be:
-- Professional and QA-friendly
-- Clear to both technical and non-technical stakeholders
-- Comprehensive yet concise
-- Following the project's documentation standards from AGENT.md
+The documentation must be: **accessible to people with zero knowledge about the feature** (they should be able to read and understand it), professional, QA-friendly, clear to both technical and non-technical stakeholders, comprehensive yet concise, using simple language with explanations for technical terms, and following AGENT.md standards.
 
 ## Instructions for Cursor
 
-1. Review the project context above to understand the project structure and conventions
-2. Search the codebase using Cursor's codebase search to understand relevant implementations
-3. Generate comprehensive QA-focused documentation following the requirements above
-4. Save the documentation to ${targetFile}
-5. Ensure the documentation follows the project's style guide from AGENT.md
+1. Review project context and search codebase to understand implementations
+2. Generate QA-focused documentation following requirements above
+3. **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
+4. **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
+5. Save to ${outputFile} and ensure it follows AGENT.md style guide
 
 ---
 
 **Ready to generate documentation. Please proceed with the analysis and documentation creation.**`
 
-    const { writeFileSync } = await import("fs")
-
-    if (options.output) {
-      // Save to file
-      writeFileSync(options.output, prompt)
-      console.log(chalk.green(`✅ Prompt saved to: ${options.output}`))
-      console.log(chalk.blue("\n📋 Prompt Preview:"))
-      console.log(chalk.gray("─".repeat(80)))
-      // Show first 20 lines as preview
-      const previewLines = prompt.split("\n").slice(0, 20).join("\n")
-      console.log(chalk.gray(previewLines))
-      console.log(chalk.gray("..."))
-      console.log(chalk.gray("─".repeat(80)))
-      
-      // Offer to copy to clipboard
-      console.log(chalk.blue("\n📋 Copy to Clipboard:"))
-      await waitForEnter(chalk.yellow("   Press Enter to copy prompt to clipboard... "))
-      
-      const copied = await copyToClipboard(prompt)
-      if (copied) {
-        console.log(chalk.green("   ✅ Copied to clipboard! Press Ctrl+V to paste in your IDE"))
-      } else {
-        console.log(chalk.yellow("   ⚠️  Could not copy to clipboard automatically. Please copy manually from the file."))
-      }
-    } else {
+    
       // Print to console
       console.log(chalk.blue("\n" + "=".repeat(80)))
       console.log(chalk.blue("📋 PROMPT FOR IDE"))
       console.log(chalk.blue("=".repeat(80) + "\n"))
+      console.log(chalk.blue(`📍 Documentation will be created at: ${outputFile}\n`))
       console.log(prompt)
       console.log(chalk.blue("\n" + "=".repeat(80)))
       
@@ -1012,7 +987,6 @@ The documentation should be:
       } else {
         console.log(chalk.yellow("   ⚠️  Could not copy to clipboard automatically. Please copy manually from above."))
       }
-    }
   } catch (error) {
     console.error(chalk.red(boxen(`Prompt Generation Error: ${error instanceof Error ? error.message : String(error)}`, { padding: 1 })))
     process.exit(1)
