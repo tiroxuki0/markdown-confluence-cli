@@ -1291,12 +1291,27 @@ exports[`parses relative-links.md 1`] = `
             "marks": [
               {
                 "attrs": {
-                  "href": "https://example.com/wiki/spaces/GAME/pages/123456789/launch+game",
+                  "href": "https://example.com/wiki/spaces/S5/pages/46956545/launch+game",
                 },
                 "type": "link",
               },
             ],
             "text": "Test md file link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com/wiki/spaces/S5/pages/46956545/launch+game",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test relative md link",
             "type": "text",
           },
           {

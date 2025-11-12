@@ -35,6 +35,11 @@ function convertRelativeUrlToFull(href: string, confluenceBaseUrl: string): stri
     // Not a full URL, continue with conversion
   }
 
+  // Skip .md files as they should be handled by filename resolution
+  if (href.endsWith('.md')) {
+    return null;
+  }
+
   // Handle relative URLs starting with ./ or ../
   if (href.startsWith('./') || href.startsWith('../')) {
     try {
@@ -83,8 +88,17 @@ function resolveFilenameToPageUrl(
     return null;
   }
 
-  // Remove .md extension if present
-  const filename = href.replace(/\.md$/, '');
+  // Remove .md extension if present and strip relative path prefixes
+  let filename = href.replace(/\.md$/, '');
+
+  // Handle relative path prefixes like ./ or ../
+  if (filename.startsWith('./')) {
+    filename = filename.substring(2);
+  } else if (filename.startsWith('../')) {
+    // For ../, we still try to resolve as a filename, but it might not work
+    // depending on the context. For now, just strip the prefix.
+    filename = filename.substring(3);
+  }
 
   // Look up page ID for this filename
   const pageId = filenameToPageIdMap.get(filename);

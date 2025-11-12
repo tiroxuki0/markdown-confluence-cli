@@ -220,6 +220,7 @@ const markdownTestCases: MarkdownFile[] = [
 [Test docs link](docs_generate.md)
 [Test getting started link](getting_started.md)
 [Test md file link](launch_game.md)
+[Test relative md link](./launch_game.md)
 [Test dotdot link](../parent/path)
 [Regular link](https://example.com)
 			`.trim(),
@@ -247,12 +248,12 @@ test.each(markdownTestCases)("parses $fileName", (markdown: MarkdownFile) => {
     filenameToPageIdMap = new Map([
       ["docs_generate", "479068161"],
       ["getting_started", "445939717"],
-      ["launch_game", "123456789"],
+      ["launch_game", "46956545"],
     ]);
     filenameToSpaceKeyMap = new Map([
       ["docs_generate", "S5"],
       ["getting_started", "TESTSPACE"],
-      ["launch_game", "GAME"],
+      ["launch_game", "S5"],
     ]);
   }
 
