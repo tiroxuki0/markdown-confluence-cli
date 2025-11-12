@@ -1,6 +1,6 @@
 {
     "name": "obsidian-confluence",
-    "version": "5.6.61",
+    "version": "5.6.62",
     "description": "This library allows you to publish your notes to Confluence",
     "main": "main.js",
     "type": "module",
@@ -24,8 +24,8 @@
         "mime-types": "^2.1.35",
         "react": "^16.14.0",
         "react-dom": "^16.14.0",
-        "md-confluence-lib": "5.6.61",
-        "md-confluence-mermaid-electron-renderer": "5.6.61"
+        "md-confluence-lib": "5.6.62",
+        "md-confluence-mermaid-electron-renderer": "5.6.62"
     },
     "resolutions": {
         "prosemirror-model": "1.14.3"
