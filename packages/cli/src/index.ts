@@ -954,6 +954,8 @@ Focus on making it clear for QA engineers to **understand the feature flow, vali
 
 Create the documentation in: **${outputFile}**  
 
+**Important Constraint:** The documentation must be **less than 2000 lines**. Keep it comprehensive yet concise, focusing on essential information.
+
 The documentation must be: **accessible to people with zero knowledge about the feature** (they should be able to read and understand it), professional, QA-friendly, clear to both technical and non-technical stakeholders, comprehensive yet concise, using simple language with explanations for technical terms, and following AGENT.md standards.
 
 ## Instructions for Cursor
@@ -962,7 +964,8 @@ The documentation must be: **accessible to people with zero knowledge about the 
 2. Generate QA-focused documentation following requirements above
 3. **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
 4. **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
-5. Save to ${outputFile} and ensure it follows AGENT.md style guide
+5. **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+6. Save to ${outputFile} and ensure it follows AGENT.md style guide
 
 ---
 
