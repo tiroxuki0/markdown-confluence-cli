@@ -1013,11 +1013,11 @@ async function handleGenerateDocs(options: any) {
       apiKey: openaiApiKey
     })
 
-    // Get git diff
+    // Get git diff (last 20 commits)
     const diffSpinner = ora("Getting code changes...").start()
     let diff = ""
     try {
-      diff = execSync(options.diffCommand || "git diff HEAD~1..HEAD", {
+      diff = execSync(options.diffCommand || "git diff HEAD~30..HEAD", {
         encoding: "utf8",
         maxBuffer: 1024 * 1024 * 10 // 10MB buffer
       })
@@ -1467,18 +1467,18 @@ yargs(processedArgs)
   )
   .command(
     "generate-docs",
-    "Generate documentation from code changes using OpenAI",
+    "Generate documentation from code changes using Gemini AI",
     (yargs) => {
       yargs
         .option("diff-command", {
           type: "string",
-          default: "git diff HEAD~1..HEAD",
-          describe: "Git command to get code changes"
+          default: "git diff HEAD~20..HEAD",
+          describe: "Git command to get code changes (default: last 20 commits)"
         })
         .option("model", {
           type: "string",
-          default: "gpt-4",
-          describe: "OpenAI model to use (gpt-4, gpt-3.5-turbo, etc.)"
+          default: "gemini-2.0-flash",
+          describe: "Gemini AI model to use (gemini-2.0-flash, gemini-1.5-pro, etc.)"
         })
         .option("output", {
           alias: "o",

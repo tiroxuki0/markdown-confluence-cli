@@ -50,11 +50,11 @@ The sync command follows this intelligent workflow:
 
 ## Generate Docs Command
 
-The `generate-docs` command uses OpenAI to automatically create feature documentation from your code changes. This is perfect for maintaining up-to-date documentation as you develop.
+The `generate-docs` command uses Gemini AI to automatically create feature documentation from your code changes. This is perfect for maintaining up-to-date documentation as you develop.
 
 ### Generate Docs Features
 
-- **AI-Powered Documentation**: Uses GPT-4 to analyze code changes and generate comprehensive docs
+- **AI-Powered Documentation**: Uses Gemini AI to analyze code changes and generate comprehensive docs
 - **Project-Aware**: Automatically reads multiple project context files for accurate documentation
 - **Context Sources**: AGENT.md, README.md, package.json, Confluence config, environment files
 - **Pattern Recognition**: Follows your project's established conventions and architecture
@@ -111,8 +111,14 @@ npx md-confluence-cli@latest generate-docs
 
 **Generate with custom diff:**
 ```bash
+# Default: reads last 20 commits
+npx md-confluence-cli@latest generate-docs
+
+# Custom: all changes since main branch
 npx md-confluence-cli@latest generate-docs --diff-command "git diff main..HEAD"
-# Generate docs for all changes since main branch
+
+# Custom: specific commit range
+npx md-confluence-cli@latest generate-docs --diff-command "git diff HEAD~5..HEAD"
 ```
 
 **Generate and auto-publish:**
@@ -123,7 +129,7 @@ npx md-confluence-cli@latest generate-docs --publish
 
 **Use different AI model:**
 ```bash
-npx md-confluence-cli@latest generate-docs --model gpt-3.5-turbo --output ./docs/feature.md
+npx md-confluence-cli@latest generate-docs --model gemini-1.5-pro --output ./docs/feature.md
 ```
 
 **Generate to specific directory:**
@@ -152,8 +158,8 @@ npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
 
 | Option | Alias | Type | Default | Description |
 |--------|-------|------|---------|-------------|
-| `--diff-command` | - | string | `git diff HEAD~1..HEAD` | Git command to get code changes |
-| `--model` | - | string | `gpt-4` | OpenAI model (gpt-4, gpt-3.5-turbo) |
+| `--diff-command` | - | string | `git diff HEAD~20..HEAD` | Git command to get code changes (default: last 20 commits) |
+| `--model` | - | string | `gemini-2.0-flash` | Gemini AI model (gemini-2.0-flash, gemini-1.5-pro, etc.) |
 | `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path (or directory for default filename) |
 | `--feature` | `-f` | string | - | Feature name for filename and title (supports spaces, default: "Feature Name") |
 | `--publish` | `-p` | boolean | `false` | Auto-publish to Confluence |
@@ -164,14 +170,14 @@ npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
 
 The generate-docs command follows this intelligent workflow:
 
-1. **Extract Code Changes** - Run git diff to get changed code
+1. **Extract Code Changes** - Run git diff to get changed code from last 20 commits (default)
 2. **Gather Project Context** - Read multiple project files:
    - `AGENT.md` - Project rules and conventions
    - `README.md` - Project overview
    - `package.json` - Dependencies and metadata
    - `.markdown-confluence.json` - Confluence setup
    - Environment files - Configuration structure
-3. **AI Analysis** - Send comprehensive context + code changes to OpenAI
+3. **AI Analysis** - Send comprehensive context + code changes to Gemini AI
 4. **Contextual Generation** - AI generates docs following your project's patterns
 5. **Format Output** - Generate structured Markdown documentation
 6. **Save & Publish** - Save to file and optionally publish to Confluence
@@ -205,7 +211,7 @@ If all retries fail, you'll see:
 💡 Hãy thử lại sau vài phút hoặc:
    • Giảm --max-retries xuống 1-2 lần
    • Tăng --retry-delay lên 5000-10000ms
-   • Chuyển sang model khác: --model gpt-3.5-turbo
+   • Chuyển sang model khác: --model gemini-1.5-pro
 ```
 
 ### Generated Documentation Format
@@ -284,6 +290,75 @@ confluence sync --overwrite
 - **Review Before Publishing**: Always check AI-generated docs for accuracy
 - **Version Control**: Commit generated docs alongside code changes
 - **Iterate**: Use multiple generations to refine documentation quality
+
+## Generate Prompt Command
+
+The `generate-prompt` command generates a comprehensive prompt that you can use in your IDE (like Cursor) to create QA-focused documentation. This is perfect for generating detailed documentation with IDE assistance.
+
+### Generate Prompt Features
+
+- **QA-Focused Prompts**: Generates prompts optimized for QA-friendly documentation
+- **Project Context Aware**: Automatically includes project context (AGENT.md, README.md, package.json)
+- **IDE-Ready**: Creates prompts formatted for IDE assistants like Cursor
+- **Feature-Specific**: Can generate prompts for specific features
+- **Clipboard Integration**: Automatically copies prompt to clipboard for easy use
+
+### Generate Prompt Examples
+
+**Basic prompt generation:**
+```bash
+npx md-confluence-cli@latest generate-prompt
+# 📝 Generating prompt...
+# 📋 PROMPT FOR IDE
+# [Prompt displayed and copied to clipboard]
+```
+
+**Generate prompt for specific feature:**
+```bash
+npx md-confluence-cli@latest generate-prompt --feature "Smart Confluence Sync"
+# Generates prompt with feature name included
+```
+
+**Generate prompt with target file:**
+```bash
+npx md-confluence-cli@latest generate-prompt --feature "User Authentication" --target-file "./docs/auth.md"
+# Generates prompt specifying where documentation should be created
+```
+
+**Save prompt to file:**
+```bash
+npx md-confluence-cli@latest generate-prompt --output ./prompt.txt
+# Saves prompt to file instead of printing to console
+```
+
+### Generate Prompt Command Options
+
+| Option | Alias | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--output` | `-o` | string | - | Output file path for the prompt (default: print to console) |
+| `--feature` | `-f` | string | `"Feature Name"` | Feature name to include in the prompt |
+| `--target-file` | `-t` | string | - | Target file path where documentation should be created |
+
+### Generate Prompt Workflow
+
+The generate-prompt command follows this workflow:
+
+1. **Gather Project Context** - Reads multiple project files:
+   - `AGENT.md` - Project rules and conventions
+   - `README.md` - Project overview
+   - `package.json` - Dependencies and metadata
+   - `.markdown-confluence.json` - Confluence setup
+   - Environment files - Configuration structure
+2. **Generate Prompt** - Creates comprehensive QA-focused prompt
+3. **Display & Copy** - Shows prompt and offers to copy to clipboard
+4. **Ready to Use** - Paste prompt in your IDE to generate documentation
+
+### Generate Prompt Best Practices
+
+- **Use with IDE**: Best used with IDE assistants like Cursor for interactive documentation generation
+- **Specify Features**: Use `--feature` to generate feature-specific prompts
+- **Set Target File**: Use `--target-file` to specify where documentation should be created
+- **Review Context**: Ensure AGENT.md and README.md are up-to-date for better prompts
 
 ## Sync Examples
 
@@ -588,6 +663,9 @@ npx md-confluence-cli generate-docs
 
 # Generate and auto-publish docs
 npx md-confluence-cli generate-docs --publish
+
+# Generate prompt for IDE documentation
+npx md-confluence-cli generate-prompt --feature "Feature Name"
 
 # Pull a single page from Confluence
 npx md-confluence-cli pull <pageId>
