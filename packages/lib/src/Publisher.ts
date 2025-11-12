@@ -138,18 +138,35 @@ export class Publisher {
     // Apply filter BEFORE building tree to avoid checking unrelated files
     let filesToProcess = allFiles;
     if (publishFilter) {
-      // Resolve relative filter paths to absolute paths based on contentRoot
-      const resolvedFilter = path.isAbsolute(publishFilter)
-        ? publishFilter
-        : path.resolve(settings.contentRoot, publishFilter);
+      // Handle different filter formats: absolute path, relative path, or filename
+      filesToProcess = allFiles.filter((file) => {
+        // Exact absolute path match
+        if (file.absoluteFilePath === publishFilter) {
+          return true;
+        }
 
-      filesToProcess = allFiles.filter(
-        (file) =>
-          file.absoluteFilePath === resolvedFilter ||
-          file.absoluteFilePath.startsWith(resolvedFilter + "/") ||
-          // Also check for direct file match (for cases where filter matches relative path)
-          file.absoluteFilePath.endsWith(publishFilter.replace(/^\/+/, '')),
-      );
+        // Filename match (just the basename)
+        const fileBasename = path.basename(file.absoluteFilePath);
+        if (fileBasename === publishFilter || fileBasename === publishFilter + '.md') {
+          return true;
+        }
+
+        // Relative path match within contentRoot
+        if (!path.isAbsolute(publishFilter)) {
+          const resolvedFilter = path.resolve(settings.contentRoot, publishFilter);
+          if (file.absoluteFilePath === resolvedFilter) {
+            return true;
+          }
+        }
+
+        // Check if publishFilter is a relative path from contentRoot
+        const relativeToContentRoot = path.relative(settings.contentRoot, file.absoluteFilePath);
+        if (relativeToContentRoot === publishFilter || relativeToContentRoot === publishFilter + '.md') {
+          return true;
+        }
+
+        return false;
+      });
     }
 
     // Build tree with filtered files, but pass all files for cross-references
