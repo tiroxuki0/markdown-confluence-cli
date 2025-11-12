@@ -170,8 +170,10 @@ export const createFolderStructure = (
   settings: ConfluenceSettings,
   allFiles?: MarkdownFile[],
 ): LocalAdfFileTreeNode => {
+  // Use allFiles for commonPath calculation if provided to ensure consistent paths
+  const pathFiles = allFiles || markdownFiles;
   const commonPath = findCommonPath(
-    markdownFiles.map((file) => file.absoluteFilePath),
+    pathFiles.map((file) => file.absoluteFilePath),
   );
   const rootNode = createTreeNode(commonPath);
 

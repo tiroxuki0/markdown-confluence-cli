@@ -1,3 +1,4 @@
+import * as path from "path";
 import { JSONDocNode } from "@atlaskit/editor-json-transformer";
 import { AlwaysADFProcessingPlugins } from "./ADFProcessingPlugins";
 import {
@@ -137,10 +138,17 @@ export class Publisher {
     // Apply filter BEFORE building tree to avoid checking unrelated files
     let filesToProcess = allFiles;
     if (publishFilter) {
+      // Resolve relative filter paths to absolute paths based on contentRoot
+      const resolvedFilter = path.isAbsolute(publishFilter)
+        ? publishFilter
+        : path.resolve(settings.contentRoot, publishFilter);
+
       filesToProcess = allFiles.filter(
         (file) =>
-          file.absoluteFilePath === publishFilter ||
-          file.absoluteFilePath.startsWith(publishFilter + "/"),
+          file.absoluteFilePath === resolvedFilter ||
+          file.absoluteFilePath.startsWith(resolvedFilter + "/") ||
+          // Also check for direct file match (for cases where filter matches relative path)
+          file.absoluteFilePath.endsWith(publishFilter.replace(/^\/+/, '')),
       );
     }
 
