@@ -99,9 +99,10 @@ function resolveFilenameToPageUrl(
     // depending on the context. For now, just strip the prefix.
     filename = filename.substring(3);
   }
-
   // Look up page ID for this filename
   const pageId = filenameToPageIdMap.get(filename);
+  console.log('filename',filename)
+  console.log('pageId',pageId)
   if (pageId) {
     try {
       const baseUrl = new URL(confluenceBaseUrl);
@@ -161,6 +162,7 @@ function processADF(adf: JSONDocNode, confluenceBaseUrl: string, filenameToPageI
       ) {
         // Try to resolve filename to page ID URL first
         const resolvedUrl = resolveFilenameToPageUrl(href, confluenceBaseUrl, filenameToPageIdMap, filenameToSpaceKeyMap);
+        console.log('resolvedUrl',resolvedUrl)
         if (resolvedUrl) {
           href = resolvedUrl;
           node.marks[0].attrs["href"] = href;
