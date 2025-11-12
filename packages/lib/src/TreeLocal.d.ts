@@ -4,5 +4,6 @@ import { ConfluenceSettings } from "./Settings";
 export declare const createFolderStructure: (
   markdownFiles: MarkdownFile[],
   settings: ConfluenceSettings,
+  allFiles?: MarkdownFile[],
 ) => LocalAdfFileTreeNode;
 //# sourceMappingURL=TreeLocal.d.ts.map

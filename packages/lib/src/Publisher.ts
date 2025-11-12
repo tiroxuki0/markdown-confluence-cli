@@ -132,18 +132,20 @@ export class Publisher {
 
     const spaceToPublishTo = parentPage.space;
 
-    let files = await this.adaptor.getMarkdownFilesToUpload();
+    const allFiles = await this.adaptor.getMarkdownFilesToUpload();
 
     // Apply filter BEFORE building tree to avoid checking unrelated files
+    let filesToProcess = allFiles;
     if (publishFilter) {
-      files = files.filter(
+      filesToProcess = allFiles.filter(
         (file) =>
           file.absoluteFilePath === publishFilter ||
           file.absoluteFilePath.startsWith(publishFilter + "/"),
       );
     }
 
-    const folderTree = createLocalAdfTree(files, settings);
+    // Build tree with filtered files, but pass all files for cross-references
+    const folderTree = createLocalAdfTree(filesToProcess, settings, allFiles);
     let confluencePagesToPublish = await ensureAllFilesExistInConfluence(
       this.confluenceClient,
       this.adaptor,

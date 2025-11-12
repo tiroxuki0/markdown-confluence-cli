@@ -168,6 +168,7 @@ const processNode = (commonPath: string, node: LocalAdfFileTreeNode) => {
 export const createFolderStructure = (
   markdownFiles: MarkdownFile[],
   settings: ConfluenceSettings,
+  allFiles?: MarkdownFile[],
 ): LocalAdfFileTreeNode => {
   const commonPath = findCommonPath(
     markdownFiles.map((file) => file.absoluteFilePath),
@@ -175,8 +176,10 @@ export const createFolderStructure = (
   const rootNode = createTreeNode(commonPath);
 
   // Build filename to page ID mapping for cross-references
-  const filenameToPageIdMap = buildFilenameToPageIdMap(markdownFiles);
-  const filenameToSpaceKeyMap = buildFilenameToSpaceKeyMap(markdownFiles);
+  // Use allFiles if provided (for cross-references when publishing filtered files)
+  const mappingFiles = allFiles || markdownFiles;
+  const filenameToPageIdMap = buildFilenameToPageIdMap(mappingFiles);
+  const filenameToSpaceKeyMap = buildFilenameToSpaceKeyMap(mappingFiles);
 
   markdownFiles.forEach((file) => {
     const relativePath = path.relative(commonPath, file.absoluteFilePath);
