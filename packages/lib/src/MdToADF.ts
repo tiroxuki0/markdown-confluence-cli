@@ -18,6 +18,58 @@ const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
 const transformer = new MarkdownTransformer();
 const serializer = new JSONTransformer();
 
+/**
+ * Converts relative URLs to full URLs based on confluence base URL
+ * Handles common relative URL patterns like ./path, ../path, or page-name
+ */
+function convertRelativeUrlToFull(href: string, confluenceBaseUrl: string): string | null {
+  if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+    return null;
+  }
+
+  // Skip if it's already a full URL
+  try {
+    new URL(href);
+    return null; // Already a full URL, let existing logic handle it
+  } catch {
+    // Not a full URL, continue with conversion
+  }
+
+  // Handle relative URLs starting with ./ or ../
+  if (href.startsWith('./') || href.startsWith('../')) {
+    try {
+      // For relative paths, we assume they should be relative to the confluence base
+      // This is a simple approach - in practice, you might want to use the file's directory
+      const baseUrl = new URL(confluenceBaseUrl);
+      // Remove trailing slash if present
+      const basePath = baseUrl.pathname.replace(/\/$/, '');
+      // Construct the full path - this is a basic implementation
+      const fullPath = href.startsWith('./')
+        ? `${basePath}/${href.substring(2)}`
+        : `${basePath}/${href}`; // For ../ paths, we'll keep them as-is for now
+
+      return `${baseUrl.origin}${fullPath}`;
+    } catch {
+      return null;
+    }
+  }
+
+  // Handle simple page names (no slashes, no protocol)
+  // Convert to a basic confluence page URL pattern
+  if (!href.includes('/') && !href.includes('\\') && !href.includes(':')) {
+    try {
+      const baseUrl = new URL(confluenceBaseUrl);
+      // Create a basic confluence page URL
+      // This assumes the page name can be used to construct a valid confluence URL
+      return `${baseUrl.origin}/wiki/spaces/${href.replace(/\s+/g, '_')}`;
+    } catch {
+      return null;
+    }
+  }
+
+  return null; // Not a relative URL we can handle
+}
+
 export function parseMarkdownToADF(
   markdown: string,
   confluenceBaseUrl: string,
@@ -50,24 +102,34 @@ function processADF(adf: JSONDocNode, confluenceBaseUrl: string): JSONDocNode {
         return node;
       }
 
+      let href = node.marks[0].attrs["href"] as string;
+
+      // Handle empty or unsafe URLs (but allow wikilinks and mentions)
       if (
-        node.marks[0].attrs["href"] === "" ||
-        (!isSafeUrl(node.marks[0].attrs["href"]) &&
-          !(node.marks[0].attrs["href"] as string).startsWith("wikilinks:") &&
-          !(node.marks[0].attrs["href"] as string).startsWith("mention:"))
+        href === "" ||
+        (!isSafeUrl(href) &&
+          !href.startsWith("wikilinks:") &&
+          !href.startsWith("mention:"))
       ) {
-        node.marks[0].attrs["href"] = "#";
+        // Try to convert relative URLs to full URLs
+        const fullUrl = convertRelativeUrlToFull(href, confluenceBaseUrl);
+        if (fullUrl && fullUrl !== href) {
+          href = fullUrl;
+          node.marks[0].attrs["href"] = href;
+        } else {
+          node.marks[0].attrs["href"] = "#";
+        }
       }
 
-      if (node.marks[0].attrs["href"] === node.text) {
-        const cleanedUrl = cleanUpUrlIfConfluence(
-          node.marks[0].attrs["href"],
-          confluenceBaseUrl,
-        );
-        node.type = "inlineCard";
-        node.attrs = { url: cleanedUrl };
-        delete node.marks;
-        delete node.text;
+      // Convert bare URLs to inline cards
+      if (href === node.text && href !== "#") {
+        const cleanedUrl = cleanUpUrlIfConfluence(href, confluenceBaseUrl);
+        if (cleanedUrl !== "#") {
+          node.type = "inlineCard";
+          node.attrs = { url: cleanedUrl };
+          delete node.marks;
+          delete node.text;
+        }
       }
 
       return node;

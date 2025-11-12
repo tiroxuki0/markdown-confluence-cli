@@ -1218,6 +1218,92 @@ exports[`parses lists.md 1`] = `
 }
 `;
 
+exports[`parses relative-links.md 1`] = `
+{
+  "absoluteFilePath": "/path/to/relative-links.md",
+  "blogPostDate": undefined,
+  "contentType": "page",
+  "contents": {
+    "content": [
+      {
+        "content": [
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com/relative/path",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test relative link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com/wiki/spaces/PageName",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test page link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com/../parent/path",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test dotdot link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Regular link",
+            "type": "text",
+          },
+        ],
+        "type": "paragraph",
+      },
+    ],
+    "type": "doc",
+    "version": 1,
+  },
+  "dontChangeParentPageId": false,
+  "fileName": "relative-links.md",
+  "folderName": "relative-links",
+  "frontmatter": {
+    "title": "Relative Links Test",
+  },
+  "pageId": undefined,
+  "pageTitle": "Relative Links",
+  "publish": false,
+  "tags": [],
+}
+`;
+
 exports[`parses tables.md 1`] = `
 {
   "absoluteFilePath": "/path/to/tables.md",

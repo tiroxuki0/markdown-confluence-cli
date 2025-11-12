@@ -210,6 +210,21 @@ const markdownTestCases: MarkdownFile[] = [
       "connie-blog-post-date": "2022-01-01",
     },
   },
+  {
+    folderName: "relative-links",
+    absoluteFilePath: "/path/to/relative-links.md",
+    fileName: "relative-links.md",
+    contents: `
+[Test relative link](./relative/path)
+[Test page link](PageName)
+[Test dotdot link](../parent/path)
+[Regular link](https://example.com)
+			`.trim(),
+    pageTitle: "Relative Links",
+    frontmatter: {
+      title: "Relative Links Test",
+    },
+  },
 ];
 test.each(markdownTestCases)("parses $fileName", (markdown: MarkdownFile) => {
   const settings: ConfluenceSettings = {
