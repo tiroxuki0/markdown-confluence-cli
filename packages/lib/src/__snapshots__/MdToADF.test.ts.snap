@@ -1261,6 +1261,36 @@ exports[`parses relative-links.md 1`] = `
             "marks": [
               {
                 "attrs": {
+                  "href": "https://example.com/wiki/spaces/S5/pages/479068161/docs+generate",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test docs link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
+                  "href": "https://example.com/wiki/spaces/TESTSPACE/pages/445939717/getting+started",
+                },
+                "type": "link",
+              },
+            ],
+            "text": "Test getting started link",
+            "type": "text",
+          },
+          {
+            "type": "hardBreak",
+          },
+          {
+            "marks": [
+              {
+                "attrs": {
                   "href": "https://example.com/../parent/path",
                 },
                 "type": "link",

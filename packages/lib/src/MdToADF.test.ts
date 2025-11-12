@@ -217,6 +217,8 @@ const markdownTestCases: MarkdownFile[] = [
     contents: `
 [Test relative link](./relative/path)
 [Test page link](PageName)
+[Test docs link](docs_generate.md)
+[Test getting started link](getting_started.md)
 [Test dotdot link](../parent/path)
 [Regular link](https://example.com)
 			`.trim(),
@@ -236,6 +238,21 @@ test.each(markdownTestCases)("parses $fileName", (markdown: MarkdownFile) => {
     contentRoot: "./",
     firstHeadingPageTitle: false,
   };
-  const adfFile = convertMDtoADF(markdown, settings);
+
+  // For the relative-links test, add filename to page ID mapping
+  let filenameToPageIdMap: Map<string, string> | undefined;
+  let filenameToSpaceKeyMap: Map<string, string> | undefined;
+  if (markdown.fileName === "relative-links.md") {
+    filenameToPageIdMap = new Map([
+      ["docs_generate", "479068161"],
+      ["getting_started", "445939717"],
+    ]);
+    filenameToSpaceKeyMap = new Map([
+      ["docs_generate", "S5"],
+      ["getting_started", "TESTSPACE"],
+    ]);
+  }
+
+  const adfFile = convertMDtoADF(markdown, settings, filenameToPageIdMap, filenameToSpaceKeyMap);
   expect(adfFile).toMatchSnapshot();
 });

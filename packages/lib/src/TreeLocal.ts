@@ -5,6 +5,70 @@ import { folderFile } from "./FolderFile";
 import { JSONDocNode } from "@atlaskit/editor-json-transformer";
 import { LocalAdfFileTreeNode } from "./Publisher";
 import { ConfluenceSettings } from "./Settings";
+import { frontmatterRegex } from "./MdToADF";
+
+/**
+ * Builds a mapping from filename (without extension) to page ID from all markdown files
+ */
+function buildFilenameToPageIdMap(files: MarkdownFile[]): Map<string, string> {
+  const mapping = new Map<string, string>();
+
+  for (const file of files) {
+    try {
+      // Extract frontmatter using regex
+      const frontmatterMatch = file.contents.match(frontmatterRegex);
+      if (frontmatterMatch && frontmatterMatch[1]) {
+        const frontmatterContent = frontmatterMatch[1];
+
+        // Try to extract pageId or connie-page-id
+        const pageIdMatch = frontmatterContent.match(/^(?:pageId|connie-page-id):\s*['"]?([^'"\n]+)['"]?$/m);
+        if (pageIdMatch && pageIdMatch[1]) {
+          const pageId = pageIdMatch[1].trim();
+          if (pageId) {
+            // Extract filename without extension
+            const filename = path.basename(file.fileName, '.md');
+            mapping.set(filename, pageId);
+          }
+        }
+      }
+    } catch (error) {
+      // Skip files with invalid frontmatter
+      console.warn(`Failed to parse frontmatter for ${file.fileName}:`, error);
+    }
+  }
+
+  return mapping;
+}
+
+function buildFilenameToSpaceKeyMap(files: MarkdownFile[]): Map<string, string> {
+  const mapping = new Map<string, string>();
+
+  for (const file of files) {
+    try {
+      // Extract frontmatter using regex
+      const frontmatterMatch = file.contents.match(frontmatterRegex);
+      if (frontmatterMatch && frontmatterMatch[1]) {
+        const frontmatterContent = frontmatterMatch[1];
+
+        // Try to extract spaceKey
+        const spaceKeyMatch = frontmatterContent.match(/^spaceKey:\s*['"]?([^'"\n]+)['"]?$/m);
+        if (spaceKeyMatch && spaceKeyMatch[1]) {
+          const spaceKey = spaceKeyMatch[1].trim();
+          if (spaceKey) {
+            // Extract filename without extension
+            const filename = path.basename(file.fileName, '.md');
+            mapping.set(filename, spaceKey);
+          }
+        }
+      }
+    } catch (error) {
+      // Skip files with invalid frontmatter
+      console.warn(`Failed to parse spaceKey for ${file.fileName}:`, error);
+    }
+  }
+
+  return mapping;
+}
 
 const findCommonPath = (paths: string[]): string => {
   const [firstPath, ...rest] = paths;
@@ -36,6 +100,8 @@ const addFileToTree = (
   file: MarkdownFile,
   relativePath: string,
   settings: ConfluenceSettings,
+  filenameToPageIdMap: Map<string, string>,
+  filenameToSpaceKeyMap?: Map<string, string>,
 ) => {
   const [folderName, ...remainingPath] = relativePath.split(path.sep);
   if (folderName === undefined) {
@@ -43,7 +109,7 @@ const addFileToTree = (
   }
 
   if (remainingPath.length === 0) {
-    const adfFile = convertMDtoADF(file, settings);
+    const adfFile = convertMDtoADF(file, settings, filenameToPageIdMap, filenameToSpaceKeyMap);
     treeNode.children.push({
       ...createTreeNode(folderName),
       file: adfFile,
@@ -56,7 +122,7 @@ const addFileToTree = (
       treeNode.children.push(childNode);
     }
 
-    addFileToTree(childNode, file, remainingPath.join(path.sep), settings);
+    addFileToTree(childNode, file, remainingPath.join(path.sep), settings, filenameToPageIdMap, filenameToSpaceKeyMap);
   }
 };
 
@@ -108,9 +174,13 @@ export const createFolderStructure = (
   );
   const rootNode = createTreeNode(commonPath);
 
+  // Build filename to page ID mapping for cross-references
+  const filenameToPageIdMap = buildFilenameToPageIdMap(markdownFiles);
+  const filenameToSpaceKeyMap = buildFilenameToSpaceKeyMap(markdownFiles);
+
   markdownFiles.forEach((file) => {
     const relativePath = path.relative(commonPath, file.absoluteFilePath);
-    addFileToTree(rootNode, file, relativePath, settings);
+    addFileToTree(rootNode, file, relativePath, settings, filenameToPageIdMap, filenameToSpaceKeyMap);
   });
 
   processNode(commonPath, rootNode);

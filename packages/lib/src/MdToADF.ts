@@ -13,7 +13,7 @@ import { isSafeUrl } from "@atlaskit/adf-schema";
 import { ConfluenceSettings } from "./Settings";
 import { cleanUpUrlIfConfluence } from "./ConfluenceUrlParser";
 
-const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
+export const frontmatterRegex = /^\s*?---\n([\s\S]*?)\n---\s*/g;
 
 const transformer = new MarkdownTransformer();
 const serializer = new JSONTransformer();
@@ -70,17 +70,51 @@ function convertRelativeUrlToFull(href: string, confluenceBaseUrl: string): stri
   return null; // Not a relative URL we can handle
 }
 
+/**
+ * Resolves a filename reference to a full Confluence page URL using page ID mapping
+ */
+function resolveFilenameToPageUrl(
+  href: string,
+  confluenceBaseUrl: string,
+  filenameToPageIdMap?: Map<string, string>,
+  filenameToSpaceKeyMap?: Map<string, string>,
+): string | null {
+  if (!href || !filenameToPageIdMap) {
+    return null;
+  }
+
+  // Remove .md extension if present
+  const filename = href.replace(/\.md$/, '');
+
+  // Look up page ID for this filename
+  const pageId = filenameToPageIdMap.get(filename);
+  if (pageId) {
+    try {
+      const baseUrl = new URL(confluenceBaseUrl);
+      // Use dynamic space key, fallback to S5 if not found
+      const spaceKey = filenameToSpaceKeyMap?.get(filename) || 'S5';
+      return `${baseUrl.origin}/wiki/spaces/${spaceKey}/pages/${pageId}/${filename.replace(/_/g, '+')}`;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export function parseMarkdownToADF(
   markdown: string,
   confluenceBaseUrl: string,
+  filenameToPageIdMap?: Map<string, string>,
+  filenameToSpaceKeyMap?: Map<string, string>,
 ) {
   const prosenodes = transformer.parse(markdown);
   const adfNodes = serializer.encode(prosenodes);
-  const nodes = processADF(adfNodes, confluenceBaseUrl);
+  const nodes = processADF(adfNodes, confluenceBaseUrl, filenameToPageIdMap, filenameToSpaceKeyMap);
   return nodes;
 }
 
-function processADF(adf: JSONDocNode, confluenceBaseUrl: string): JSONDocNode {
+function processADF(adf: JSONDocNode, confluenceBaseUrl: string, filenameToPageIdMap?: Map<string, string>, filenameToSpaceKeyMap?: Map<string, string>): JSONDocNode {
   const olivia = traverse(adf, {
     text: (node, _parent) => {
       if (_parent.parent?.node?.type == "listItem" && node.text) {
@@ -111,13 +145,20 @@ function processADF(adf: JSONDocNode, confluenceBaseUrl: string): JSONDocNode {
           !href.startsWith("wikilinks:") &&
           !href.startsWith("mention:"))
       ) {
-        // Try to convert relative URLs to full URLs
-        const fullUrl = convertRelativeUrlToFull(href, confluenceBaseUrl);
-        if (fullUrl && fullUrl !== href) {
-          href = fullUrl;
+        // Try to resolve filename to page ID URL first
+        const resolvedUrl = resolveFilenameToPageUrl(href, confluenceBaseUrl, filenameToPageIdMap, filenameToSpaceKeyMap);
+        if (resolvedUrl) {
+          href = resolvedUrl;
           node.marks[0].attrs["href"] = href;
         } else {
-          node.marks[0].attrs["href"] = "#";
+          // Try to convert relative URLs to full URLs
+          const fullUrl = convertRelativeUrlToFull(href, confluenceBaseUrl);
+          if (fullUrl && fullUrl !== href) {
+            href = fullUrl;
+            node.marks[0].attrs["href"] = href;
+          } else {
+            node.marks[0].attrs["href"] = "#";
+          }
         }
       }
 
@@ -206,12 +247,16 @@ function processADF(adf: JSONDocNode, confluenceBaseUrl: string): JSONDocNode {
 export function convertMDtoADF(
   file: MarkdownFile,
   settings: ConfluenceSettings,
+  filenameToPageIdMap?: Map<string, string>,
+  filenameToSpaceKeyMap?: Map<string, string>,
 ): LocalAdfFile {
   file.contents = file.contents.replace(frontmatterRegex, "");
 
   const adfContent = parseMarkdownToADF(
     file.contents,
     settings.confluenceBaseUrl,
+    filenameToPageIdMap,
+    filenameToSpaceKeyMap,
   );
 
   const results = processConniePerPageConfig(file, settings, adfContent);
