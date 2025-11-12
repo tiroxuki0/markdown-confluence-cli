@@ -54,9 +54,9 @@ function convertRelativeUrlToFull(href: string, confluenceBaseUrl: string): stri
     }
   }
 
-  // Handle simple page names (no slashes, no protocol)
+  // Handle simple page names (no slashes, no protocol, no file extensions)
   // Convert to a basic confluence page URL pattern
-  if (!href.includes('/') && !href.includes('\\') && !href.includes(':')) {
+  if (!href.includes('/') && !href.includes('\\') && !href.includes(':') && !href.includes('.')) {
     try {
       const baseUrl = new URL(confluenceBaseUrl);
       // Create a basic confluence page URL
