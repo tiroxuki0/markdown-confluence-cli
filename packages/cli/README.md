@@ -50,11 +50,13 @@ The sync command follows this intelligent workflow:
 
 ## Generate Docs Command
 
-The `generate-docs` command uses Gemini AI to automatically create feature documentation from your code changes. This is perfect for maintaining up-to-date documentation as you develop.
+The `generate-docs` command uses Gemini AI to automatically create QA-focused feature documentation from your code changes. This is perfect for maintaining up-to-date documentation as you develop.
 
 ### Generate Docs Features
 
-- **AI-Powered Documentation**: Uses Gemini AI to analyze code changes and generate comprehensive docs
+- **QA-Focused Documentation**: Generates QA-friendly documentation emphasizing feature flows, testable steps, and validation points
+- **Accessible Writing**: Documentation written for readers with zero knowledge - uses simple language and explains all technical terms
+- **AI-Powered**: Uses Gemini AI to analyze code changes (last 30 commits) and generate comprehensive docs
 - **Project-Aware**: Automatically reads multiple project context files for accurate documentation
 - **Context Sources**: AGENT.md, README.md, package.json, Confluence config, environment files
 - **Pattern Recognition**: Follows your project's established conventions and architecture
@@ -216,72 +218,45 @@ If all retries fail, you'll see:
 
 ### Generated Documentation Format
 
-All generated documentation includes frontmatter and title for Confluence publishing:
+All generated documentation follows QA-focused structure and includes frontmatter for Confluence publishing:
 
 ```markdown
 ---
 connie-publish: true
+title: "Feature Name"
 ---
 
-# `Feature Name`
+# Feature Name
 
-Smart Confluence Sync
+## Overview
 
-### Summary
+Clear description, purpose, goals, and expected outcomes in simple terms...
 
-Implemented intelligent sync logic...
+## Feature Flow / User Journey
 
-### Changed Components
+Step-by-step flow with pre/post-conditions and expected behavior...
 
-- packages/cli/src/index.ts - Added handleSync function
+## Technical Details
 
-### API / Behavior Changes
+Architecture, key modules, dependencies explained in accessible terms...
 
-- New --overwrite flag for force sync
+## QA & Testing Guide
 
-### Usage Example
+- Test scenarios (happy path + edge cases) with concrete examples
+- Error handling with expected messages
+- Integration points and exploratory testing suggestions
 
-```bash
-confluence sync --overwrite
+## Usage & Examples
+
+Practical examples with real-world scenarios...
 ```
 
-### Notes for Future Maintainers
+**Key Characteristics:**
+- **QA-Friendly**: Focuses on testable steps and validation points
+- **Accessible**: Written for readers with zero knowledge
+- **Comprehensive**: Covers Overview, Feature Flow, Technical Details, QA Guide, and Examples
+- **Confluence-Ready**: Includes proper frontmatter for publishing
 
-- Logic prioritizes safety: pull new files first, push existing changes
-```
-
-**With --feature "Smart Confluence Sync":**
-```markdown
----
-connie-publish: true
----
-
-# `Smart Confluence Sync`
-
-Smart Confluence Sync
-
-### Summary
-
-Implemented intelligent sync logic...
-
-### Changed Components
-
-- packages/cli/src/index.ts - Added handleSync function
-
-### API / Behavior Changes
-
-- New --overwrite flag for force sync
-
-### Usage Example
-
-```bash
-confluence sync --overwrite
-```
-
-### Notes for Future Maintainers
-
-- Logic prioritizes safety: pull new files first, push existing changes
-```
 
 ### Generate Docs Best Practices
 

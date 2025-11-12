@@ -1017,7 +1017,7 @@ async function handleGenerateDocs(options: any) {
     const diffSpinner = ora("Getting code changes...").start()
     let diff = ""
     try {
-      diff = execSync(options.diffCommand || "git diff HEAD~30..HEAD", {
+      diff = execSync(options.diffCommand || "git diff HEAD~100..HEAD", {
         encoding: "utf8",
         maxBuffer: 1024 * 1024 * 10 // 10MB buffer
       })
@@ -1040,81 +1040,95 @@ async function handleGenerateDocs(options: any) {
 
     const promptFeatureName = options.feature || "Feature Name"
 
-    const prompt = `You are an expert technical documentation specialist focused on creating comprehensive feature documentation. Your task is to generate detailed feature documentation by analyzing the entire codebase, recent code changes, and supporting documentation.
+    const prompt = `# QA-Focused Documentation Generation Task
 
-Context:
+You are an expert technical documentation specialist, with strong experience in generating QA-friendly documentation. Your task is to generate comprehensive documentation by analyzing code changes, project context, and supporting documentation, emphasizing **feature flows, testable steps, and QA validation points**.
 
-* You have access to the following source materials:
+**Critical Requirement:** The documentation must be QA-friendly and accessible to people who know nothing about the feature - they should be able to read and understand it without prior knowledge.
 
-  - Full project codebase
+## Context
 
-  - Recent git diff showing code changes
+You have access to:
+- Full project codebase
+- Recent git diff showing code changes (last 30 commits)
+- AGENT.md file (project rules and conventions)
+- README.md file (project overview)
+- Project structure and configuration files
 
-  - AGENT.md file
+${projectContext ? `## Project Context\n\n${projectContext}\n` : ""}
 
-  - README.md file
+## Task
 
-${projectContext ? `Project Context:\n${projectContext}` : "No additional project context provided."}
+Generate comprehensive documentation for: **${promptFeatureName}**
 
-Action steps:
+Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
 
-* Thoroughly review the AGENT.md and README.md files to understand project context and existing documentation standards
+**Key Principle:** Write as if the reader has zero knowledge about this feature. Use simple language, explain technical terms, and provide context for every concept. The documentation should be understandable by both QA engineers and non-technical stakeholders.
 
-* Analyze the complete git diff to identify:
+### Documentation Requirements
 
-  - New features introduced
+1. **Overview**
+   - Clear description, purpose, goals, and expected outcomes in simple terms (avoid jargon without explanation)
+   - Summary of what changed and why
 
-  - Significant code modifications
+2. **Feature Flow / User Journey**
+   - Step-by-step flow with pre/post-conditions and expected behavior at each step (write so someone unfamiliar can follow along)
+   - Suggest visual representation (flow diagram, sequence diagram) for complex flows
+   - Highlight new features introduced in the code changes
 
-  - Potential impact on existing functionality
+3. **Technical Details**
+   - Architecture, key modules, dependencies, and integrations explained in accessible terms
+   - QA-relevant specifications (validations, triggers, constraints) with explanations of what they mean and why QA should care
+   - Significant code modifications and their impact
+   - Performance considerations and integration points
 
-* Create comprehensive documentation that includes:
+4. **QA & Testing Guide**
+   - Test scenarios (happy path + edge cases) in clear step-by-step format with concrete input/output examples
+   - Error handling with expected messages and explanations, plus steps to reproduce issues
+   - Integration points and exploratory testing suggestions (explain what to check and why)
+   - Regression testing considerations based on code changes
 
-  - Feature overview
+5. **Usage & Examples**
+   - Practical examples with real-world scenarios and code snippets (if applicable) with explanatory comments
+   - Before/after comparisons where relevant
 
-  - Detailed technical specifications
+### Formatting Guidelines
 
-  - Implementation details
+- Use clear markdown with code blocks, tables, and nested lists for structured information
+- Suggest diagrams/visuals for complex flows
+- Include frontmatter for Confluence:
+  \`\`\`yaml
+  ---
+  connie-publish: true
+  title: "${promptFeatureName}"
+  ---
+  \`\`\`
 
-  - Potential use cases
+### Output
 
-  - Code examples where relevant
+**Important Constraint:** The documentation must be **less than 2000 lines**. Keep it comprehensive yet concise, focusing on essential information.
 
-Documentation requirements:
+The documentation must be: **accessible to people with zero knowledge about the feature** (they should be able to read and understand it), professional, QA-friendly, clear to both technical and non-technical stakeholders, comprehensive yet concise, using simple language with explanations for technical terms, and following AGENT.md standards.
 
-* Use clear, professional technical writing style
+## Code Changes Analysis
 
-* Incorporate visual elements like tables and nested structures
-
-* Highlight key changes and their rationale
-
-* Ensure documentation is accessible to both technical and non-technical stakeholders
-
-Specific documentation sections to cover:
-
-* Technical architecture impact
-
-* Performance considerations
-
-* Potential integration points
-
-Formatting guidelines:
-
-* Use markdown for clean, structured documentation
-
-* Include code snippets where they enhance understanding
-
-* Create comparison tables showing before/after states
-
-* Use clear headings and subheadings for easy navigation
-
-Provide a draft that can be reviewed and refined by the technical team, ensuring maximum clarity and comprehensiveness.
-
---- CODE CHANGES ---
+--- CODE CHANGES (Last 30 commits) ---
 
 ${diff}
 
-Based on the code changes above and project context, generate comprehensive feature documentation for: **${promptFeatureName}**`
+---
+
+## Instructions
+
+1. Analyze the git diff to identify new features, modifications, and their impact
+2. Review project context (AGENT.md, README.md) to understand project standards
+3. Generate QA-focused documentation following requirements above
+4. **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
+5. **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
+6. **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+7. Follow AGENT.md style guide and include Confluence frontmatter
+
+**Ready to generate documentation. Please proceed with the analysis and documentation creation.**`
 
     // Use retry logic for API calls to handle rate limiting
     const maxRetries = options.maxRetries || 3
@@ -1127,7 +1141,7 @@ Based on the code changes above and project context, generate comprehensive feat
           messages: [
             {
               role: "system",
-              content: "You produce concise, accurate developer documentation. Focus on what changed and why."
+              content: "You are an expert technical documentation specialist focused on creating QA-friendly documentation. Generate comprehensive, accessible documentation that helps QA engineers understand feature flows, validate functionality, and identify edge cases. Write for readers with zero knowledge - use simple language and explain all technical terms."
             },
             { role: "user", content: prompt }
           ]
