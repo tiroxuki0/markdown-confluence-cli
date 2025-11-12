@@ -917,6 +917,51 @@ Focus on making it clear for QA engineers to **understand the feature flow, vali
 
 **Key Principle:** Write as if the reader has zero knowledge about this feature. Use simple language, explain technical terms, and provide context for every concept. The documentation should be understandable by both QA engineers and non-technical stakeholders.
 
+## Feature Analysis (CRITICAL FIRST STEP)
+
+**Before generating documentation, you MUST carefully analyze the feature name and its relationship to the codebase:**
+
+1. **Feature Name Analysis:**
+   - Break down the feature name: What does "${promptFeatureName}" mean?
+   - Identify key concepts, components, or functionality implied by the name
+   - Consider synonyms, related terms, and domain-specific meanings
+   - Think about what this feature should do based on its name
+
+2. **Codebase Search & Analysis:**
+   - **Use Cursor's codebase search** to find code related to "${promptFeatureName}"
+   - Search for:
+     - Files/folders with names matching feature concepts
+     - Functions, classes, or modules related to the feature
+     - Comments, documentation, or strings mentioning the feature
+     - API endpoints, routes, or interfaces related to the feature
+     - Configuration files, environment variables, or settings
+     - Test files that test this feature
+   - Look for both **exact matches** and **related functionality**
+
+3. **Feature-Code Mapping:**
+   - **Map the feature name to specific code**: Which parts of the codebase implement "${promptFeatureName}"?
+   - Identify:
+     - Core implementation files
+     - Supporting utilities or helpers
+     - API/interface definitions
+     - Database models or data structures
+     - Configuration or settings
+     - Tests and test scenarios
+   - Understand the **architecture** and **data flow** of this feature
+
+4. **Contextual Understanding:**
+   - Understand how "${promptFeatureName}" fits into the broader system
+   - Identify dependencies and integration points
+   - Recognize patterns and architectural decisions
+   - Understand user flows and interactions
+
+5. **Validation:**
+   - Verify that you found code actually related to "${promptFeatureName}"
+   - If the feature is not found, document what should exist based on the name
+   - If multiple related features exist, focus on the one specified
+
+**Take your time with this analysis** - spend significant effort understanding the relationship between the feature name and codebase before proceeding to documentation generation.
+
 ### Documentation Requirements
 
 1. **Overview**
@@ -960,16 +1005,43 @@ The documentation must be: **accessible to people with zero knowledge about the 
 
 ## Instructions for Cursor
 
-1. Review project context and search codebase to understand implementations
-2. Generate QA-focused documentation following requirements above
-3. **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
-4. **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
-5. **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
-6. Save to ${outputFile} and ensure it follows AGENT.md style guide
+**Step-by-Step Process (Take your time with each step):**
+
+1. **Feature-Code Analysis (MOST IMPORTANT):**
+   - Carefully analyze the feature name "${promptFeatureName}" and its meaning
+   - **Use codebase search extensively** to find all code related to this feature
+   - Search for files, functions, classes, APIs, tests, and configurations
+   - Map specific code locations to the feature name
+   - Identify direct implementations and related supporting code
+   - Spend significant time understanding this relationship before proceeding
+
+2. **Project Context Review:**
+   - Review project context (AGENT.md, README.md) to understand project standards
+   - Understand how this feature fits into the overall architecture
+   - Review related code to understand implementation patterns
+
+3. **Documentation Generation:**
+   - Generate QA-focused documentation following requirements above
+   - Ensure all documentation is directly related to "${promptFeatureName}" and the code you found
+   - Focus on the specific feature, not unrelated functionality
+   - Base documentation on actual code implementation, not assumptions
+
+4. **Quality Checks:**
+   - **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
+   - **Validate relevance:** Ensure all content relates to "${promptFeatureName}" - remove or minimize unrelated information
+   - **Validate accuracy:** Verify that documentation matches actual code implementation
+   - **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
+   - **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+
+5. **Finalization:**
+   - Save to ${outputFile} and ensure it follows AGENT.md style guide
+   - Ensure the feature name "${promptFeatureName}" is accurately reflected throughout the documentation
+
+**CRITICAL:** Do not rush. Take time to deeply understand the relationship between "${promptFeatureName}" and the codebase before generating documentation. Use codebase search thoroughly - quality analysis leads to quality documentation.
 
 ---
 
-**Ready to generate documentation. Please proceed with the analysis and documentation creation.**`
+**Ready to generate documentation. Please proceed with careful analysis and documentation creation.**`
 
     
       // Print to console
@@ -1013,7 +1085,7 @@ async function handleGenerateDocs(options: any) {
       apiKey: openaiApiKey
     })
 
-    // Get git diff (last 20 commits)
+    // Get git diff (last 100 commits)
     const diffSpinner = ora("Getting code changes...").start()
     let diff = ""
     try {
@@ -1025,11 +1097,35 @@ async function handleGenerateDocs(options: any) {
       diffSpinner.warn(chalk.yellow("Could not get git diff, using empty diff"))
     }
 
+    // Limit diff size to avoid exceeding API context limits
+    // Gemini 2.0 Flash has ~1M token context (~4M characters), we use ~2M chars (~500K tokens) to be safe
+    // This leaves room for prompt (~50K tokens), project context (~50K tokens), and response (~400K tokens)
+    // IMPORTANT: Keep the END of diff (most recent changes) as they are most relevant for documentation
+    const MAX_DIFF_SIZE = 2000000 // ~2M characters (~500K tokens) - safe limit for 1M token context window
+    const originalDiffLength = diff.length
+    let diffTruncated = false
+
+    if (diff.length > MAX_DIFF_SIZE) {
+      // Keep the END of diff (most recent changes) instead of the beginning
+      // This ensures we don't miss the latest, most relevant code changes
+      const truncatedMessage = `\n\n... [Diff truncated: showing last ${MAX_DIFF_SIZE.toLocaleString()} characters of ${originalDiffLength.toLocaleString()} total - oldest changes were removed to fit API limits] ...\n\n`
+      const messageLength = truncatedMessage.length
+      const availableSize = MAX_DIFF_SIZE - messageLength
+      
+      // Take the last N characters (most recent changes)
+      diff = truncatedMessage + diff.substring(diff.length - availableSize)
+      diffTruncated = true
+    }
+
     if (!diff.trim()) {
       diffSpinner.warn(chalk.yellow("No code changes found"))
       // Still proceed with empty diff
     } else {
-      diffSpinner.succeed(chalk.green(`Got ${diff.length} characters of diff`))
+      if (diffTruncated) {
+        diffSpinner.succeed(chalk.green(`Got ${originalDiffLength.toLocaleString()} characters of diff (truncated to ${MAX_DIFF_SIZE.toLocaleString()} for API limits)`))
+      } else {
+        diffSpinner.succeed(chalk.green(`Got ${diff.length.toLocaleString()} characters of diff`))
+      }
     }
 
     // Gather comprehensive project context
@@ -1050,7 +1146,7 @@ You are an expert technical documentation specialist, with strong experience in 
 
 You have access to:
 - Full project codebase
-- Recent git diff showing code changes (last 30 commits)
+- Recent git diff showing code changes (last 100 commits, may be truncated if too large)
 - AGENT.md file (project rules and conventions)
 - README.md file (project overview)
 - Project structure and configuration files
@@ -1063,34 +1159,116 @@ Generate comprehensive documentation for: **${promptFeatureName}**
 
 Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
 
-**Key Principle:** Write as if the reader has zero knowledge about this feature. Use simple language, explain technical terms, and provide context for every concept. The documentation should be understandable by both QA engineers and non-technical stakeholders.
+**CRITICAL: Dual Audience Writing**
+
+The documentation must serve **TWO audiences simultaneously**:
+
+1. **Technical Readers** (Developers, Technical QA):
+   - Need technical details: architecture, APIs, code structure, implementation specifics
+   - Want to understand how things work under the hood
+   - Need code references, technical specifications, and implementation details
+
+2. **Non-Technical Readers** (QA Testers, Product Managers, Business Stakeholders):
+   - Need plain language explanations of what the feature does
+   - Want to understand user flows, business logic, and expected behaviors
+   - Need step-by-step guides without technical jargon
+
+**Writing Strategy:**
+- **For every technical concept**: Provide BOTH the technical term AND a plain language explanation
+- **Structure**: Start with simple explanation, then provide technical details
+- **Format**: Use "What it is" (simple) → "How it works" (technical) pattern
+- **Examples**: Show both user-facing behavior and technical implementation
+- **Avoid**: Assuming readers know technical terms - always explain them first
+- **Balance**: Include technical details for developers, but explain them in ways non-technical readers can understand
+
+## Feature Analysis (CRITICAL FIRST STEP)
+
+**Before generating documentation, you MUST carefully analyze the relationship between the feature name and the code changes:**
+
+1. **Feature Name Analysis:**
+   - Break down the feature name: What does "${promptFeatureName}" mean?
+   - Identify key concepts, components, or functionality implied by the name
+   - Consider synonyms, related terms, and domain-specific meanings
+
+2. **Code Changes Analysis:**
+   - Thoroughly examine the git diff to identify:
+     - New files, functions, classes, or modules
+     - Modified functions, APIs, or behaviors
+     - Deleted code or deprecated features
+     - Configuration changes, dependencies, or integrations
+     - Test files and their implications
+
+3. **Feature-Code Mapping:**
+   - **Map the feature name to specific code changes**: Which parts of the diff relate to "${promptFeatureName}"?
+   - Look for:
+     - File/folder names that match feature concepts
+     - Function/class names related to the feature
+     - Comments, commit messages, or documentation strings mentioning the feature
+     - API endpoints, routes, or interfaces related to the feature
+     - Database schema changes, migrations, or data models
+   - Identify **direct connections** (explicit mentions) and **indirect connections** (related functionality)
+
+4. **Contextual Understanding:**
+   - Understand how the feature fits into the broader system
+   - Identify dependencies and integration points
+   - Recognize patterns and architectural decisions
+
+5. **Validation:**
+   - Verify that the code changes actually implement or modify "${promptFeatureName}"
+   - If the connection is unclear, note this in the documentation
+   - If multiple features are present, focus on the one specified
+
+**Take your time with this analysis** - spend significant effort understanding the relationship between the feature name and code changes before proceeding to documentation generation.
 
 ### Documentation Requirements
 
+**CRITICAL: Each section must balance technical accuracy with accessibility**
+
 1. **Overview**
-   - Clear description, purpose, goals, and expected outcomes in simple terms (avoid jargon without explanation)
-   - Summary of what changed and why
+   - **Plain Language**: What does this feature do? (explain like talking to a non-technical person)
+   - **Technical Summary**: What code changes were made? (for technical readers)
+   - **Purpose & Goals**: Why was this feature built? What problem does it solve?
+   - **Expected Outcomes**: What should users/QA expect to see?
+   - **Format**: Start with simple explanation, then provide technical details
 
 2. **Feature Flow / User Journey**
-   - Step-by-step flow with pre/post-conditions and expected behavior at each step (write so someone unfamiliar can follow along)
-   - Suggest visual representation (flow diagram, sequence diagram) for complex flows
-   - Highlight new features introduced in the code changes
+   - **User Perspective**: Step-by-step flow from user's point of view (no technical jargon)
+   - **Technical Flow**: How the system processes each step (for technical readers)
+   - **Pre/Post Conditions**: What must be true before/after each step (explain in plain terms)
+   - **Expected Behavior**: What should happen at each step (both user-visible and system-level)
+   - **Visual Suggestions**: Flow diagrams, sequence diagrams for complex flows
+   - **Code References**: Link to specific files/functions for technical readers
 
-3. **Technical Details**
-   - Architecture, key modules, dependencies, and integrations explained in accessible terms
-   - QA-relevant specifications (validations, triggers, constraints) with explanations of what they mean and why QA should care
-   - Significant code modifications and their impact
-   - Performance considerations and integration points
+3. **Technical Details** (Balance: Technical accuracy + Plain explanations)
+   - **Architecture**: Explain system design in simple terms first, then provide technical details
+   - **Key Modules**: What each module does (plain language) → How it's implemented (technical)
+   - **Dependencies**: What external systems/services are used and why (explain business impact)
+   - **APIs/Interfaces**: What they do (simple) → Technical specifications (detailed)
+   - **Data Flow**: How data moves through the system (explain in user terms, then technical)
+   - **Validations & Constraints**: What rules exist (plain language) → Technical implementation
+   - **Performance**: What performance characteristics matter (business impact) → Technical metrics
 
-4. **QA & Testing Guide**
-   - Test scenarios (happy path + edge cases) in clear step-by-step format with concrete input/output examples
-   - Error handling with expected messages and explanations, plus steps to reproduce issues
-   - Integration points and exploratory testing suggestions (explain what to check and why)
-   - Regression testing considerations based on code changes
+4. **QA & Testing Guide** (Focus on actionable, understandable steps)
+   - **Test Scenarios**: 
+     - Plain language description of what to test
+     - Step-by-step instructions (no technical knowledge required)
+     - Expected results in user-visible terms
+     - Technical validation points (for technical QA)
+   - **Happy Path**: What should work normally (explain in user terms)
+   - **Edge Cases**: Unusual scenarios to test (explain why they matter)
+   - **Error Handling**: 
+     - What errors users might see (plain language)
+     - When/why errors occur (simple explanation)
+     - How to reproduce (step-by-step, no code required)
+     - Technical error codes/details (for developers)
+   - **Integration Points**: What to check (plain language) → Technical details
+   - **Regression Testing**: What existing features might be affected (explain impact)
 
 5. **Usage & Examples**
-   - Practical examples with real-world scenarios and code snippets (if applicable) with explanatory comments
-   - Before/after comparisons where relevant
+   - **User Examples**: Real-world scenarios showing how to use the feature (no code)
+   - **Technical Examples**: Code snippets with detailed comments explaining what each part does
+   - **Before/After**: Show what changed (user-visible) → Technical implementation changes
+   - **Common Patterns**: How developers typically use this (technical) → What users experience (simple)
 
 ### Formatting Guidelines
 
@@ -1108,27 +1286,68 @@ Focus on making it clear for QA engineers to **understand the feature flow, vali
 
 **Important Constraint:** The documentation must be **less than 2000 lines**. Keep it comprehensive yet concise, focusing on essential information.
 
-The documentation must be: **accessible to people with zero knowledge about the feature** (they should be able to read and understand it), professional, QA-friendly, clear to both technical and non-technical stakeholders, comprehensive yet concise, using simple language with explanations for technical terms, and following AGENT.md standards.
+**Note:** If the git diff is very large (100+ commits), it will be truncated to fit within API context limits (~2M characters). The truncation keeps the **most recent changes** (end of diff) as they are most relevant for documentation. Older changes may be removed, but focus on analyzing the latest code changes shown.
+
+**Documentation Standards:**
+
+The documentation must be:
+- **Accessible**: Non-technical readers (QA testers, product managers) can understand what the feature does and how to test it
+- **Technically Accurate**: Developers can understand implementation details, architecture, and code structure
+- **Balanced**: Each section serves both audiences - simple explanations followed by technical details
+- **Professional**: Well-structured, clear, and comprehensive
+- **QA-Friendly**: Focus on testable behaviors, validation points, and edge cases
+- **Comprehensive yet Concise**: Cover all important aspects without being overwhelming
+- **Terminology**: Every technical term explained in plain language first, then technical details provided
+- **Format**: Follow AGENT.md style guide and include Confluence frontmatter
+
+**Remember**: A QA tester who doesn't know code should be able to read this and understand how to test the feature. A developer should be able to read the same document and understand how it's implemented. Both audiences reading the same document.
 
 ## Code Changes Analysis
 
---- CODE CHANGES (Last 30 commits) ---
+--- CODE CHANGES (Last 100 commits) ---
 
-${diff}
+${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed) to ensure latest code is analyzed for documentation.\n\n` : ""}${diff}
 
 ---
 
 ## Instructions
 
-1. Analyze the git diff to identify new features, modifications, and their impact
-2. Review project context (AGENT.md, README.md) to understand project standards
-3. Generate QA-focused documentation following requirements above
-4. **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
-5. **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
-6. **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
-7. Follow AGENT.md style guide and include Confluence frontmatter
+**Step-by-Step Process (Take your time with each step):**
 
-**Ready to generate documentation. Please proceed with the analysis and documentation creation.**`
+1. **Feature-Code Analysis (MOST IMPORTANT):**
+   - Carefully analyze the feature name "${promptFeatureName}" and its meaning
+   - Thoroughly examine the git diff to find code changes related to this feature
+   - Map specific code changes (files, functions, classes) to the feature name
+   - Identify direct and indirect connections between feature name and code
+   - Spend significant time understanding this relationship before proceeding
+
+2. **Project Context Review:**
+   - Review project context (AGENT.md, README.md) to understand project standards
+   - Understand how this feature fits into the overall architecture
+
+3. **Documentation Generation:**
+   - Generate QA-focused documentation following requirements above
+   - Ensure all documentation is directly related to "${promptFeatureName}" and the code changes you identified
+   - Focus on the specific feature, not unrelated code changes
+
+4. **Quality Checks:**
+   - **Dual Audience Test:** 
+     - Can a non-technical QA tester understand what the feature does and how to test it?
+     - Can a developer understand the technical implementation and architecture?
+     - Both audiences should be able to read the same document and get what they need
+   - **Technical Term Check:** Every technical term must have a plain language explanation nearby
+   - **Balance Check:** Ensure technical details are present but explained accessibly
+   - **Validate relevance:** Ensure all content relates to "${promptFeatureName}" - remove or minimize unrelated information
+   - **Validate readability:** Ask "Can someone with zero technical knowledge understand what this feature does and how to test it?"
+   - **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+
+5. **Finalization:**
+   - Follow AGENT.md style guide and include Confluence frontmatter
+   - Ensure the feature name "${promptFeatureName}" is accurately reflected throughout the documentation
+
+**CRITICAL:** Do not rush. Take time to deeply understand the relationship between "${promptFeatureName}" and the code changes before generating documentation. Quality analysis leads to quality documentation.
+
+**Ready to generate documentation. Please proceed with careful analysis and documentation creation.**`
 
     // Use retry logic for API calls to handle rate limiting
     const maxRetries = options.maxRetries || 3
@@ -1141,7 +1360,7 @@ ${diff}
           messages: [
             {
               role: "system",
-              content: "You are an expert technical documentation specialist focused on creating QA-friendly documentation. Generate comprehensive, accessible documentation that helps QA engineers understand feature flows, validate functionality, and identify edge cases. Write for readers with zero knowledge - use simple language and explain all technical terms."
+              content: "You are an expert technical documentation specialist focused on creating QA-friendly documentation for DUAL AUDIENCES: technical readers (developers) and non-technical readers (QA testers, product managers). CRITICAL: Before generating documentation, you MUST carefully analyze the relationship between the feature name and code changes. Spend significant time understanding how the feature name maps to specific code changes, files, functions, and implementations. Only after thorough analysis should you generate documentation. BALANCE IS KEY: Include technical details for developers, but explain everything in ways non-technical readers can understand. For every technical concept, provide BOTH a plain language explanation AND technical details. Structure: simple explanation first, then technical depth. Both audiences should be able to read the same document and get what they need. Do not rush - quality analysis leads to quality documentation."
             },
             { role: "user", content: prompt }
           ]
@@ -1486,8 +1705,8 @@ yargs(processedArgs)
       yargs
         .option("diff-command", {
           type: "string",
-          default: "git diff HEAD~20..HEAD",
-          describe: "Git command to get code changes (default: last 20 commits)"
+          default: "git diff HEAD~100..HEAD",
+          describe: "Git command to get code changes (default: last 100 commits)"
         })
         .option("model", {
           type: "string",

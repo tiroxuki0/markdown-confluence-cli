@@ -113,14 +113,14 @@ npx md-confluence-cli@latest generate-docs
 
 **Generate with custom diff:**
 ```bash
-# Default: reads last 20 commits
+# Default: reads last 100 commits
 npx md-confluence-cli@latest generate-docs
 
 # Custom: all changes since main branch
 npx md-confluence-cli@latest generate-docs --diff-command "git diff main..HEAD"
 
-# Custom: specific commit range
-npx md-confluence-cli@latest generate-docs --diff-command "git diff HEAD~5..HEAD"
+# Custom: specific commit range (e.g., last 50 commits)
+npx md-confluence-cli@latest generate-docs --diff-command "git diff HEAD~50..HEAD"
 ```
 
 **Generate and auto-publish:**
@@ -160,7 +160,7 @@ npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
 
 | Option | Alias | Type | Default | Description |
 |--------|-------|------|---------|-------------|
-| `--diff-command` | - | string | `git diff HEAD~20..HEAD` | Git command to get code changes (default: last 20 commits) |
+| `--diff-command` | - | string | `git diff HEAD~100..HEAD` | Git command to get code changes (default: last 100 commits) |
 | `--model` | - | string | `gemini-2.0-flash` | Gemini AI model (gemini-2.0-flash, gemini-1.5-pro, etc.) |
 | `--output` | `-o` | string | `./FEATURE_DOC.md` | Output file path (or directory for default filename) |
 | `--feature` | `-f` | string | - | Feature name for filename and title (supports spaces, default: "Feature Name") |
@@ -172,7 +172,7 @@ npx md-confluence-cli@latest generate-docs --max-retries 5 --retry-delay 5000
 
 The generate-docs command follows this intelligent workflow:
 
-1. **Extract Code Changes** - Run git diff to get changed code from last 20 commits (default)
+1. **Extract Code Changes** - Run git diff to get changed code from last 100 commits (default)
 2. **Gather Project Context** - Read multiple project files:
    - `AGENT.md` - Project rules and conventions
    - `README.md` - Project overview
