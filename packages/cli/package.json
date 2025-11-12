@@ -1,6 +1,6 @@
 {
     "name": "md-confluence-cli",
-    "version": "5.6.49",
+    "version": "5.6.50",
     "description": "This CLI allows you to publish your notes to Confluence",
     "bin": "dist/index.js",
     "scripts": {
@@ -20,8 +20,8 @@
         "boxen": "7.1.1",
         "chalk": "5.3.0",
         "confluence.js": "^1.6.3",
-        "md-confluence-lib": "5.6.49",
-        "md-confluence-mermaid-puppeteer-renderer": "5.6.49"
+        "md-confluence-lib": "5.6.50",
+        "md-confluence-mermaid-puppeteer-renderer": "5.6.50"
     },
     "dependencies": {
         "openai": "^4.104.0",
@@ -37,11 +37,11 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/markdown-confluence/markdown-confluence",
+        "url": "https://https://github.com/tiroxuki0/markdown-confluence-cli",
         "directory": "packages/cli"
     },
-    "homepage": "https://github.com/markdown-confluence/markdown-confluence/tree/main/packages/cli",
+    "homepage": "https://https://github.com/tiroxuki0/markdown-confluence-cli/tree/main/packages/cli",
     "bugs": {
-        "url": "https://github.com/markdown-confluence/markdown-confluence/issues"
+        "url": "https://https://github.com/tiroxuki0/markdown-confluence-cli/issues"
     }
 }

@@ -15,7 +15,7 @@ We take the security of our project seriously. If you discover a security vulner
 
 To report a vulnerability, please follow these steps:
 
-[Report a vulnerability](https://github.com/markdown-confluence/markdown-confluence/security/advisories/new)
+[Report a vulnerability](https://https://github.com/tiroxuki0/markdown-confluence-cli/security/advisories/new)
 
 1. Visit the repository's main page on GitHub.
 2. Click on the "Security" tab.

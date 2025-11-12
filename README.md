@@ -1,7 +1,7 @@
 # Markdown to Confluence Tools
 
 [![Discord](https://img.shields.io/discord/1102841755646316576)](https://discord.gg/3ZVEc3S48x)  
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/markdown-confluence/markdown-confluence/badge)](https://api.securityscorecards.dev/projects/github.com/markdown-confluence/markdown-confluence)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/https://github.com/tiroxuki0/markdown-confluence-cli/badge)](https://api.securityscorecards.dev/projects/https://github.com/tiroxuki0/markdown-confluence-cli)
 [![Known Vulnerabilities](https://snyk.io/test/github/markdown-confluence/markdown-confluence/badge.svg)](https://snyk.io/test/github/markdown-confluence/markdown-confluence)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/markdown-confluence/markdown-confluence/release-please.yml)
 ![Lines of code](https://img.shields.io/tokei/lines/github/markdown-confluence/markdown-confluence)
@@ -43,7 +43,7 @@ For detailed installation and usage instructions, please visit our [documentatio
 Contributions are welcome! If you have a feature request, bug report, or want to improve the plugin, please open an issue or submit a pull request on the GitHub repository.
 
 ## License
-This project is licensed under the [Apache 2.0](https://github.com/markdown-confluence/markdown-confluence/blob/main/LICENSE) License.
+This project is licensed under the [Apache 2.0](https://https://github.com/tiroxuki0/markdown-confluence-cli/blob/main/LICENSE) License.
 
 ## Disclaimer:
 The Apache license is only applicable to the Obsidian Confluence Integration (“Integration“), not to any third parties' services, websites, content or platforms that this Integration may enable you to connect with.  In another word, there is no license granted to you by the above identified licensor(s) to access any third-party services, websites, content, or platforms.  You are solely responsible for obtaining licenses from such third parties to use and access their services and to comply with their license terms. Please do not disclose any passwords, credentials, or tokens to any third-party service in your contribution to this Obsidian Confluence Integration project.”

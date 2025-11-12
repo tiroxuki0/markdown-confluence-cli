@@ -1,6 +1,6 @@
 # @markdown-confluence/mermaid-electron-renderer
 
-[![GitHub license](https://img.shields.io/github/license/markdown-confluence/mermaid-electron-renderer)](https://github.com/markdown-confluence/markdown-confluence/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/markdown-confluence/mermaid-electron-renderer)](https://https://github.com/tiroxuki0/markdown-confluence-cli/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/v/@markdown-confluence/mermaid-electron-renderer)](https://www.npmjs.com/package/@markdown-confluence/mermaid-electron-renderer)
 [![npm](https://img.shields.io/npm/dw/@markdown-confluence/mermaid-electron-renderer)](https://www.npmjs.com/package/@markdown-confluence/mermaid-electron-renderer)
 

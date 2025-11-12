@@ -1,6 +1,6 @@
 # @markdown-confluence/mermaid-puppeteer-renderer
 
-[![GitHub license](https://img.shields.io/github/license/markdown-confluence/markdown-confluence)](https://github.com/markdown-confluence/markdown-confluence/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/markdown-confluence/markdown-confluence)](https://https://github.com/tiroxuki0/markdown-confluence-cli/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/v/@markdown-confluence/mermaid-puppeteer-renderer)](https://www.npmjs.com/package/@markdown-confluence/mermaid-puppeteer-renderer)
 [![npm](https://img.shields.io/npm/dw/@markdown-confluence/mermaid-puppeteer-renderer)](https://www.npmjs.com/package/@markdown-confluence/mermaid-puppeteer-renderer)
 
