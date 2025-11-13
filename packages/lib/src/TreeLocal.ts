@@ -5,12 +5,11 @@ import { folderFile } from "./FolderFile";
 import { JSONDocNode } from "@atlaskit/editor-json-transformer";
 import { LocalAdfFileTreeNode } from "./Publisher";
 import { ConfluenceSettings } from "./Settings";
-import { frontmatterRegex } from "./MdToADF";
 
 /**
  * Builds a mapping from filename (without extension) to page ID from all markdown files
  */
-function buildFilenameToPageIdMap(files: MarkdownFile[]): Map<string, string> {
+function buildFilenameToPageIdMap(files: MarkdownFile[], commonPath: string): Map<string, string> {
   const mapping = new Map<string, string>();
 
   for (const file of files) {
@@ -23,8 +22,10 @@ function buildFilenameToPageIdMap(files: MarkdownFile[]): Map<string, string> {
       if (pageId !== undefined && pageId !== null) {
         const pageIdStr = String(pageId).trim();
         if (pageIdStr) {
-          // Extract filename without extension
-          const filename = path.basename(file.fileName, '.md');
+          // For nested files, use relative path from common root as key
+          // This allows cross-references like mobile_app/index.md to resolve
+          const relativePath = path.relative(commonPath, file.absoluteFilePath);
+          const filename = path.join(path.dirname(relativePath), path.basename(file.fileName, '.md'));
           mapping.set(filename, pageIdStr);
         }
       }
@@ -37,25 +38,23 @@ function buildFilenameToPageIdMap(files: MarkdownFile[]): Map<string, string> {
   return mapping;
 }
 
-function buildFilenameToSpaceKeyMap(files: MarkdownFile[]): Map<string, string> {
+function buildFilenameToSpaceKeyMap(files: MarkdownFile[], commonPath: string): Map<string, string> {
   const mapping = new Map<string, string>();
 
   for (const file of files) {
     try {
-      // Extract frontmatter using regex
-      const frontmatterMatch = file.contents.match(frontmatterRegex);
-      if (frontmatterMatch && frontmatterMatch[1]) {
-        const frontmatterContent = frontmatterMatch[1];
+      // Use the already parsed frontmatter from the file object
+      const frontmatter = file.frontmatter || {};
 
-        // Try to extract spaceKey
-        const spaceKeyMatch = frontmatterContent.match(/^spaceKey:\s*['"]?([^'"\n]+)['"]?$/m);
-        if (spaceKeyMatch && spaceKeyMatch[1]) {
-          const spaceKey = spaceKeyMatch[1].trim();
-          if (spaceKey) {
-            // Extract filename without extension
-            const filename = path.basename(file.fileName, '.md');
-            mapping.set(filename, spaceKey);
-          }
+      // Try to extract spaceKey
+      const spaceKey = frontmatter['spaceKey'];
+      if (spaceKey && typeof spaceKey === 'string') {
+        const spaceKeyStr = spaceKey.trim();
+        if (spaceKeyStr) {
+          // For nested files, use relative path from common root as key
+          const relativePath = path.relative(commonPath, file.absoluteFilePath);
+          const filename = path.join(path.dirname(relativePath), path.basename(file.fileName, '.md'));
+          mapping.set(filename, spaceKeyStr);
         }
       }
     } catch (error) {
@@ -177,8 +176,8 @@ export const createFolderStructure = (
   // Build filename to page ID mapping for cross-references
   // Use allFiles if provided (for cross-references when publishing filtered files)
   const mappingFiles = allFiles || markdownFiles;
-  const filenameToPageIdMap = buildFilenameToPageIdMap(mappingFiles);
-  const filenameToSpaceKeyMap = buildFilenameToSpaceKeyMap(mappingFiles);
+  const filenameToPageIdMap = buildFilenameToPageIdMap(mappingFiles, commonPath);
+  const filenameToSpaceKeyMap = buildFilenameToSpaceKeyMap(mappingFiles, commonPath);
 
   markdownFiles.forEach((file) => {
     const relativePath = path.relative(commonPath, file.absoluteFilePath);

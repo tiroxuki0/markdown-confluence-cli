@@ -102,24 +102,16 @@ function resolveFilenameToPageUrl(
   // Look up page ID for this filename
   const pageId = filenameToPageIdMap.get(filename);
 
-  console.log(`🔍 Resolving "${href}" → filename: "${filename}"`);
-  console.log(`📊 Available mappings: ${filenameToPageIdMap.size} entries`);
-  console.log(`📄 pageId for "${filename}":`, pageId);
   if (pageId) {
     try {
       const baseUrl = new URL(confluenceBaseUrl);
       // Use dynamic space key, fallback to S5 if not found
       const spaceKey = filenameToSpaceKeyMap?.get(filename) || 'S5';
-      const resolvedUrl = `${baseUrl.origin}/wiki/spaces/${spaceKey}/pages/${pageId}/${filename.replace(/_/g, '+')}`;
-      console.log(`✅ Resolved "${filename}" → "${resolvedUrl}"`);
-      return resolvedUrl;
-    } catch (error) {
-      console.log(`❌ Failed to construct URL for "${filename}":`, error);
+      return `${baseUrl.origin}/wiki/spaces/${spaceKey}/pages/${pageId}/${filename.replace(/_/g, '+')}`;
+    } catch {
       return null;
     }
   }
-
-  console.log(`❌ No pageId found for filename "${filename}"`);
   return null;
 }
 

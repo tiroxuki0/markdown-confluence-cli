@@ -23,7 +23,15 @@ import {
   MermaidRendererPlugin,
 } from "./ADFProcessingPlugins/MermaidRendererPlugin";
 
-const settingsLoader = new AutoSettingsLoader();
+const settingsLoader = new StaticSettingsLoader({
+  confluenceBaseUrl: "https://example.com",
+  confluenceParentId: "123",
+  atlassianUserName: "test@example.com",
+  atlassianApiToken: "test-token",
+  folderToPublish: ".",
+  contentRoot: "./",
+  firstHeadingPageTitle: false,
+});
 const settings = settingsLoader.load();
 
 const markdownTestCases: MarkdownFile[] = [
