@@ -191,9 +191,7 @@ async function handlePublish(publishFilter: string = "") {
 
   try {
     const { adaptor, settingLoader, confluenceClient, mermaidRenderer } = await setupDependencies()
-
     const publisher = new Publisher(adaptor, settingLoader, confluenceClient, [new MermaidRendererPlugin(mermaidRenderer)])
-
     const results = await publisher.publish(publishFilter)
 
     // Get settings and parent page info for URL logging (reuse existing dependencies)

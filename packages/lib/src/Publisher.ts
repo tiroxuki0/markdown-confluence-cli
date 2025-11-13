@@ -108,7 +108,6 @@ export class Publisher {
   ) {
     this.adaptor = adaptor;
     this.settingsLoader = settingsLoader;
-
     this.confluenceClient = confluenceClient;
     this.adfProcessingPlugins = adfProcessingPlugins.concat(
       AlwaysADFProcessingPlugins,
@@ -116,22 +115,23 @@ export class Publisher {
   }
 
   async publish(publishFilter?: string) {
-    const settings = this.settingsLoader.load();
+    try {
+      const settings = this.settingsLoader.load();
 
-    if (!this.myAccountId) {
-      const currentUser = await this.confluenceClient.users.getCurrentUser();
-      this.myAccountId = currentUser.accountId;
-    }
+      if (!this.myAccountId) {
+        const currentUser = await this.confluenceClient.users.getCurrentUser();
+        this.myAccountId = currentUser.accountId;
+      }
 
-    const parentPage = await this.confluenceClient.content.getContentById({
-      id: settings.confluenceParentId,
-      expand: ["body.atlas_doc_format", "space"],
-    });
-    if (!parentPage.space) {
-      throw new Error("Missing Space Key");
-    }
+      const parentPage = await this.confluenceClient.content.getContentById({
+        id: settings.confluenceParentId,
+        expand: ["body.atlas_doc_format", "space"],
+      });
+      if (!parentPage.space) {
+        throw new Error("Missing Space Key");
+      }
 
-    const spaceToPublishTo = parentPage.space;
+      const spaceToPublishTo = parentPage.space;
 
     const allFiles = await this.adaptor.getMarkdownFilesToUpload();
 
@@ -194,6 +194,11 @@ export class Publisher {
 
     const adrFiles = await Promise.all(adrFileTasks);
     return adrFiles;
+    } catch (error) {
+      console.error('❌ Publisher.publish error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
   }
 
   private async publishFile(node: ConfluenceNode): Promise<FilePublishResult> {

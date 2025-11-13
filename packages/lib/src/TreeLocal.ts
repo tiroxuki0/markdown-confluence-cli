@@ -15,20 +15,17 @@ function buildFilenameToPageIdMap(files: MarkdownFile[]): Map<string, string> {
 
   for (const file of files) {
     try {
-      // Extract frontmatter using regex
-      const frontmatterMatch = file.contents.match(frontmatterRegex);
-      if (frontmatterMatch && frontmatterMatch[1]) {
-        const frontmatterContent = frontmatterMatch[1];
+      // Use the already parsed frontmatter from the file object
+      const frontmatter = file.frontmatter || {};
 
-        // Try to extract pageId or connie-page-id
-        const pageIdMatch = frontmatterContent.match(/^(?:pageId|connie-page-id):\s*['"]?([^'"\n]+)['"]?$/m);
-        if (pageIdMatch && pageIdMatch[1]) {
-          const pageId = pageIdMatch[1].trim();
-          if (pageId) {
-            // Extract filename without extension
-            const filename = path.basename(file.fileName, '.md');
-            mapping.set(filename, pageId);
-          }
+      // Try to extract pageId or connie-page-id
+      const pageId = frontmatter['pageId'] || frontmatter['connie-page-id'];
+      if (pageId !== undefined && pageId !== null) {
+        const pageIdStr = String(pageId).trim();
+        if (pageIdStr) {
+          // Extract filename without extension
+          const filename = path.basename(file.fileName, '.md');
+          mapping.set(filename, pageIdStr);
         }
       }
     } catch (error) {
