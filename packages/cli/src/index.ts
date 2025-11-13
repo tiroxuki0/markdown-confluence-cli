@@ -890,156 +890,318 @@ async function handleGeneratePrompt(options: any) {
     const { join } = await import("path")
     const outputFile = options.output ? join(options.output, outputFileName) : outputFileName
 
-    // Create comprehensive QA-focused prompt for IDE
+    // Create comprehensive QA-focused prompt for IDE using structured approach
     const prompt = `# QA-Focused Documentation Generation Task
 
-You are an expert technical documentation specialist, with strong experience in generating QA-friendly documentation. Your task is to generate comprehensive documentation by analyzing the codebase and project context, emphasizing **feature flows, testable steps, and QA validation points**.
+You are an expert technical documentation specialist, specialized in creating **dual-audience documentation** that serves both technical developers and non-technical QA testers simultaneously. Your documentation must be accessible yet technically accurate.
 
-**Critical Requirement:** The documentation must be QA-friendly and accessible to people who know nothing about the feature - they should be able to read and understand it without prior knowledge.
+## Role & Expertise
 
-## Context
+You are a **Senior Technical Documentation Engineer** with expertise in:
+- QA-focused documentation creation
+- Dual-audience writing (technical + non-technical)
+- Code analysis and feature mapping
+- User experience documentation
+- Technical specification writing
+
+## Context & Environment
 
 You have access to:
-- Full project codebase (via Cursor's codebase search)
-- AGENT.md file (project rules and conventions)
-- README.md file (project overview)
+- Full project codebase (via Cursor's codebase search and analysis tools)
+- AGENT.md file (project standards and conventions)
+- README.md file (project overview and architecture)
 - Project structure and configuration files
+- Development environment with search capabilities
 
 ${projectContext ? `## Project Context\n\n${projectContext}\n` : ""}
 
 ## Task
 
-Generate comprehensive documentation for: **${promptFeatureName}**  
+**Generate comprehensive QA-focused documentation for: "${promptFeatureName}"**
 
-Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
+**Success Criteria:**
+- Documentation accessible to readers with zero feature knowledge
+- Clear feature flows and user journeys
+- Actionable QA testing scenarios
+- Technical accuracy for developers
+- Professional presentation following AGENT.md standards
 
-**Key Principle:** Write as if the reader has zero knowledge about this feature. Use simple language, explain technical terms, and provide context for every concept. The documentation should be understandable by both QA engineers and non-technical stakeholders.
+## Critical Requirements
 
-## Feature Analysis (CRITICAL FIRST STEP)
+### Audience Balance (MANDATORY)
+Your documentation must serve **TWO audiences simultaneously**:
 
-**Before generating documentation, you MUST carefully analyze the feature name and its relationship to the codebase:**
+**Audience 1: Non-Technical Readers (QA Testers, Product Managers)**
+- Need plain language explanations
+- Want step-by-step user flows
+- Require business logic understanding
+- Need clear testing instructions
 
-1. **Feature Name Analysis:**
-   - Break down the feature name: What does "${promptFeatureName}" mean?
-   - Identify key concepts, components, or functionality implied by the name
-   - Consider synonyms, related terms, and domain-specific meanings
-   - Think about what this feature should do based on its name
+**Audience 2: Technical Readers (Developers, Technical QA)**
+- Need technical implementation details
+- Want code structure and architecture
+- Require API specifications
+- Need implementation references
 
-2. **Codebase Search & Analysis:**
-   - **Use Cursor's codebase search** to find code related to "${promptFeatureName}"
-   - Search for:
-     - Files/folders with names matching feature concepts
-     - Functions, classes, or modules related to the feature
-     - Comments, documentation, or strings mentioning the feature
-     - API endpoints, routes, or interfaces related to the feature
-     - Configuration files, environment variables, or settings
-     - Test files that test this feature
-   - Look for both **exact matches** and **related functionality**
+### Writing Strategy
+- **Every technical concept**: Plain language explanation first, then technical details
+- **Structure**: Simple explanation → Technical depth
+- **Format**: "What it does" (user view) → "How it works" (technical view)
+- **Balance**: Include technical details but explain them accessibly
 
-3. **Feature-Code Mapping:**
-   - **Map the feature name to specific code**: Which parts of the codebase implement "${promptFeatureName}"?
-   - Identify:
-     - Core implementation files
-     - Supporting utilities or helpers
-     - API/interface definitions
-     - Database models or data structures
-     - Configuration or settings
-     - Tests and test scenarios
-   - Understand the **architecture** and **data flow** of this feature
+## Feature Analysis Framework
 
-4. **Contextual Understanding:**
-   - Understand how "${promptFeatureName}" fits into the broader system
-   - Identify dependencies and integration points
-   - Recognize patterns and architectural decisions
-   - Understand user flows and interactions
+**CRITICAL: Complete this analysis BEFORE generating documentation**
 
-5. **Validation:**
-   - Verify that you found code actually related to "${promptFeatureName}"
-   - If the feature is not found, document what should exist based on the name
-   - If multiple related features exist, focus on the one specified
+### Phase 1: Feature Understanding
+1. **Feature Name Deconstruction**
+   - Break down "${promptFeatureName}": What does each word/component imply?
+   - Identify core concepts, functionality, and domain
+   - Consider synonyms and related terminology
+   - What should this feature accomplish from a user perspective?
 
-**Take your time with this analysis** - spend significant effort understanding the relationship between the feature name and codebase before proceeding to documentation generation.
+2. **Codebase Mapping**
+   - **Use Cursor's codebase search extensively**
+   - Search patterns: exact matches, related terms, synonyms
+   - Identify: files, functions, classes, APIs, configurations, tests
+   - Map feature concepts to specific code locations
 
-### Documentation Requirements
+### Phase 2: Implementation Analysis
+1. **Architecture Discovery**
+   - Core implementation files and modules
+   - Supporting utilities and helpers
+   - API endpoints and interfaces
+   - Data structures and models
+   - Configuration and settings
 
-1. **Overview**
-   - Clear description, purpose, goals, and expected outcomes in simple terms (avoid jargon without explanation)
+2. **Flow Analysis**
+   - User interaction patterns
+   - Data flow and processing
+   - Integration points
+   - Dependencies and relationships
 
-2. **Feature Flow / User Journey**
-   - Step-by-step flow with pre/post-conditions and expected behavior at each step (write so someone unfamiliar can follow along)
-   - Suggest visual representation (flow diagram, sequence diagram) for complex flows
+### Phase 3: Validation
+- Verify feature-code connections are accurate
+- Identify gaps between feature expectations and implementation
+- Note any missing or incomplete functionality
+- Document assumptions and limitations
 
-3. **Technical Details**
-   - Architecture, key modules, dependencies, and integrations explained in accessible terms
-   - QA-relevant specifications (validations, triggers, constraints) with explanations of what they mean and why QA should care
+**Quality Gate:** Do not proceed until you have clear feature-code mapping.
 
-4. **QA & Testing Guide**
-   - Test scenarios (happy path + edge cases) in clear step-by-step format with concrete input/output examples
-   - Error handling with expected messages and explanations, plus steps to reproduce issues
-   - Integration points and exploratory testing suggestions (explain what to check and why)
+## Documentation Structure
 
-5. **Usage & Examples**
-   - Practical examples with real-world scenarios and code snippets (if applicable) with explanatory comments
+### 1. Overview Section
+**Dual Audience Approach:**
+- **User Perspective**: What does this feature do? (Plain language)
+- **Technical Perspective**: What code implements this? (Technical details)
+- **Business Value**: Why was this built? What problem solves?
+- **Scope**: What's included, what's not
 
-### Formatting Guidelines
+### 2. Feature Flow / User Journey
+**Structure each step as:**
+- **User Action**: What user does (plain language)
+- **System Response**: What happens (both user-visible and technical)
+- **Pre/Post Conditions**: What must be true before/after
+- **Validation Points**: What QA should verify
+- **Code References**: Technical implementation details
 
-- Use clear markdown with code blocks, tables, and nested lists for structured information
-- Suggest diagrams/visuals for complex flows
-- Include frontmatter for Confluence:
-  \`\`\`yaml
-  ---
-  connie-publish: true
-  title: "${promptFeatureName}"
-  ---
-  \`\`\`
+### 3. Technical Implementation
+**Balance accessibility with accuracy:**
+- **Architecture**: High-level design (simple) → Detailed structure (technical)
+- **Key Components**: Purpose (plain) → Implementation (technical)
+- **APIs & Interfaces**: Usage (simple) → Specifications (technical)
+- **Data Flow**: User impact (plain) → Technical processing (technical)
+- **Performance**: User experience (plain) → Technical metrics (technical)
 
-### Output
+### 4. QA & Testing Guide
+**Make this actionable for non-technical QA:**
 
-Create the documentation in: **${outputFile}**  
+**Test Scenarios Structure:**
+- **Scenario Description**: What to test (plain language)
+- **Prerequisites**: Setup required (step-by-step)
+- **Test Steps**: Clear numbered steps (no technical knowledge needed)
+- **Expected Results**: What should happen (user-visible terms)
+- **Validation Points**: Technical checks (for technical QA)
+- **Edge Cases**: Unusual conditions to test
 
-**Important Constraint:** The documentation must be **less than 2000 lines**. Keep it comprehensive yet concise, focusing on essential information.
+**Include:**
+- Happy path testing (normal usage)
+- Error scenarios (failure modes)
+- Edge cases (boundary conditions)
+- Integration testing (system interactions)
+- Regression testing (impact on existing features)
 
-The documentation must be: **accessible to people with zero knowledge about the feature** (they should be able to read and understand it), professional, QA-friendly, clear to both technical and non-technical stakeholders, comprehensive yet concise, using simple language with explanations for technical terms, and following AGENT.md standards.
+### 5. Usage Examples
+- **User Examples**: Real-world scenarios (no code)
+- **Technical Examples**: Code snippets with detailed comments
+- **Configuration**: Setup and customization options
+- **Troubleshooting**: Common issues and solutions
 
-## Instructions for Cursor
+## Quality Standards
 
-**Step-by-Step Process (Take your time with each step):**
+### Content Quality
+- **Accessibility**: Non-technical reader can understand feature and testing
+- **Technical Accuracy**: Developer can understand implementation
+- **Completeness**: All important aspects covered
+- **Balance**: Technical details explained accessibly
+- **Professional**: Well-structured, clear, error-free
 
-1. **Feature-Code Analysis (MOST IMPORTANT):**
-   - Carefully analyze the feature name "${promptFeatureName}" and its meaning
-   - **Use codebase search extensively** to find all code related to this feature
-   - Search for files, functions, classes, APIs, tests, and configurations
-   - Map specific code locations to the feature name
-   - Identify direct implementations and related supporting code
-   - Spend significant time understanding this relationship before proceeding
+### Format Requirements
+- **Markdown**: Clean structure with headers, lists, code blocks
+- **Frontmatter**: Confluence publishing metadata
+- **Code References**: Link to specific files/functions
+- **Visual Suggestions**: Diagrams for complex flows
+- **Tables**: Structured data presentation
 
-2. **Project Context Review:**
-   - Review project context (AGENT.md, README.md) to understand project standards
-   - Understand how this feature fits into the overall architecture
-   - Review related code to understand implementation patterns
+## Output Specifications
 
-3. **Documentation Generation:**
-   - Generate QA-focused documentation following requirements above
-   - Ensure all documentation is directly related to "${promptFeatureName}" and the code you found
-   - Focus on the specific feature, not unrelated functionality
-   - Base documentation on actual code implementation, not assumptions
+**File:** ${outputFile}
+**Format:** Markdown with Confluence frontmatter
+**Length Limit:** < 2000 lines (prioritize essential information)
+**Style Guide:** Follow AGENT.md standards
 
-4. **Quality Checks:**
-   - **Write for accessibility:** Assume reader knows nothing - explain every technical term, provide context, use simple language
-   - **Validate relevance:** Ensure all content relates to "${promptFeatureName}" - remove or minimize unrelated information
-   - **Validate accuracy:** Verify that documentation matches actual code implementation
-   - **Validate readability:** Ask "Can someone who has never seen this feature understand what it does and how to test it?"
-   - **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+## Confluence Frontmatter (MANDATORY)
 
-5. **Finalization:**
-   - Save to ${outputFile} and ensure it follows AGENT.md style guide
-   - Ensure the feature name "${promptFeatureName}" is accurately reflected throughout the documentation
+\`\`\`yaml
+---
+connie-publish: true
+title: "${promptFeatureName}"
+tags: documentation, qa, ${promptFeatureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}
+---
+\`\`\`
 
-**CRITICAL:** Do not rush. Take time to deeply understand the relationship between "${promptFeatureName}" and the codebase before generating documentation. Use codebase search thoroughly - quality analysis leads to quality documentation.
+## Execution Framework
+
+### Phase 1: Deep Analysis (Spend significant time here)
+1. **Feature Name Analysis**: Deconstruct "${promptFeatureName}" thoroughly
+2. **Codebase Search**: Use all available search tools extensively
+3. **Feature Mapping**: Create detailed feature-to-code mapping
+4. **Architecture Understanding**: Understand how feature fits into system
+5. **Gap Analysis**: Identify what's missing or unclear
+
+### Phase 2: Documentation Planning
+1. **Audience Analysis**: Plan content for dual audiences
+2. **Structure Design**: Design clear, logical flow
+3. **Content Mapping**: Map analysis findings to documentation sections
+4. **Technical Balance**: Ensure accessibility without losing technical depth
+
+### Phase 3: Content Generation
+1. **Write Overview**: Start with user perspective, add technical details
+2. **Document Flows**: Create step-by-step user journeys with technical references
+3. **Technical Sections**: Provide implementation details with explanations
+4. **QA Scenarios**: Create actionable testing instructions
+5. **Examples**: Include real-world usage scenarios
+
+### Phase 4: Quality Assurance
+1. **Accessibility Check**: Can non-technical reader understand?
+2. **Technical Check**: Are implementation details accurate?
+3. **Completeness Check**: Is all essential information included?
+4. **Balance Check**: Is content accessible yet technically sound?
+5. **Format Check**: Follows AGENT.md and markdown standards?
+
+### Phase 5: Finalization
+1. **Review**: Final content review and editing
+2. **Format**: Ensure proper markdown and frontmatter
+3. **Save**: Create file at specified location
+4. **Validate**: Confirm documentation meets all requirements
+
+## Validation & Testing Framework
+
+### Pre-Generation Validation
+**Before starting documentation:**
+
+1. **Feature Existence Check**
+   - Confirm "${promptFeatureName}" exists in codebase
+   - Validate feature name against actual implementation
+   - Identify primary feature files and components
+
+2. **Codebase Search Validation**
+   - Execute comprehensive search patterns
+   - Verify search results contain relevant code
+   - Document any gaps in feature implementation
+
+3. **Context Availability Check**
+   - Ensure AGENT.md and README.md are accessible
+   - Validate project context information
+   - Confirm development environment capabilities
+
+### Content Validation Methods
+
+**During documentation generation:**
+
+1. **Dual Audience Testing**
+   - **Accessibility Test**: Can someone with zero knowledge understand?
+   - **Technical Test**: Do developers get implementation details?
+   - **Balance Test**: Both audiences satisfied by same content?
+
+2. **Technical Accuracy Validation**
+   - **Code Reference Check**: All code references accurate?
+   - **Implementation Check**: Documentation matches actual code?
+   - **Terminology Check**: Technical terms properly explained?
+
+3. **QA Actionability Validation**
+   - **Test Step Clarity**: Can QA execute without technical knowledge?
+   - **Scenario Completeness**: All important test cases covered?
+   - **Edge Case Coverage**: Unusual scenarios documented?
+
+### Post-Generation Quality Checks
+
+**Final validation before completion:**
+
+1. **Structure Compliance**
+   - All required sections present?
+   - Frontmatter correctly formatted?
+   - Length within limits (< 2000 lines)?
+
+2. **Content Quality Assessment**
+   - **Readability**: Clear, professional, error-free writing?
+   - **Completeness**: All important aspects covered?
+   - **Relevance**: All content relates to "${promptFeatureName}"?
+
+3. **Standards Adherence**
+   - Follows AGENT.md style guide?
+   - Includes proper Confluence metadata?
+   - Uses correct markdown formatting?
+
+### Automated Validation Checklist
+
+- [ ] Feature-code mapping complete and accurate
+- [ ] Documentation accessible to non-technical readers
+- [ ] Technical implementation details correct
+- [ ] QA testing scenarios actionable
+- [ ] All sections follow dual-audience approach
+- [ ] Frontmatter includes proper Confluence tags
+- [ ] Length stays under 2000 lines
+- [ ] Follows AGENT.md standards
+- [ ] No unexplained technical jargon
+- [ ] Code references are accurate
+
+## Critical Success Factors
+
+### Analysis Quality
+- **Time Investment**: Spend adequate time on feature-code analysis
+- **Search Thoroughness**: Use all available search capabilities
+- **Mapping Accuracy**: Ensure feature maps correctly to implementation
+- **Context Understanding**: Understand broader system implications
+
+### Content Quality
+- **Dual Audience Success**: Both technical and non-technical readers satisfied
+- **Accessibility**: Zero-knowledge readers can understand
+- **Technical Depth**: Developers get needed implementation details
+- **QA Friendliness**: Clear, actionable testing instructions
+- **Professional Quality**: Well-written, well-structured, error-free
+
+### Process Adherence
+- **Framework Following**: Complete all phases systematically
+- **Quality Gates**: Pass all validation checkpoints
+- **Standards Compliance**: Follow AGENT.md and project standards
+- **Length Discipline**: Stay within line limits through prioritization
+
+**CRITICAL REMINDER:** Quality analysis produces quality documentation. Invest time in understanding the relationship between "${promptFeatureName}" and the codebase. Your analysis quality directly determines documentation quality.
 
 ---
 
-**Ready to generate documentation. Please proceed with careful analysis and documentation creation.**`
+**Ready to begin comprehensive feature analysis and documentation generation for "${promptFeatureName}".**`
 
     
       // Print to console
@@ -1134,218 +1296,364 @@ async function handleGenerateDocs(options: any) {
 
     const promptFeatureName = options.feature || "Feature Name"
 
-    const prompt = `# QA-Focused Documentation Generation Task
+    const prompt = `# QA-Focused Documentation Generation from Code Changes
 
-You are an expert technical documentation specialist, with strong experience in generating QA-friendly documentation. Your task is to generate comprehensive documentation by analyzing code changes, project context, and supporting documentation, emphasizing **feature flows, testable steps, and QA validation points**.
+You are a **Senior Technical Documentation Engineer** specializing in automated documentation generation from code changes. You excel at creating **dual-audience documentation** that serves both developers and QA testers simultaneously.
 
-**Critical Requirement:** The documentation must be QA-friendly and accessible to people who know nothing about the feature - they should be able to read and understand it without prior knowledge.
+## Expertise & Role
 
-## Context
+You are an expert in:
+- **Automated documentation generation** from code changes
+- **Dual-audience writing** (technical + non-technical)
+- **Code change analysis** and feature mapping
+- **QA-focused documentation** with actionable testing scenarios
+- **Technical specification** writing with plain language explanations
+
+## Context & Resources
 
 You have access to:
-- Full project codebase
-- Recent git diff showing code changes (last 100 commits, may be truncated if too large)
-- AGENT.md file (project rules and conventions)
-- README.md file (project overview)
-- Project structure and configuration files
+- **Code Changes**: Recent git diff (${diffTruncated ? `truncated from ${originalDiffLength.toLocaleString()} to 2M characters` : `full ${diff.length.toLocaleString()} characters`})
+- **Project Context**: AGENT.md standards and README.md overview
+- **Codebase**: Full project structure and implementation details
+- **Analysis Tools**: Code search and pattern recognition capabilities
 
 ${projectContext ? `## Project Context\n\n${projectContext}\n` : ""}
 
-## Task
+## Primary Task
 
-Generate comprehensive documentation for: **${promptFeatureName}**
+**Generate comprehensive QA-focused documentation for code changes implementing: "${promptFeatureName}"**
 
-Focus on making it clear for QA engineers to **understand the feature flow, validate functionality, and identify edge cases**.
+**Success Criteria:**
+- Clear feature understanding from code changes
+- Dual-audience accessibility (technical + non-technical)
+- Actionable QA testing scenarios
+- Technical implementation accuracy
+- Professional documentation following AGENT.md standards
 
-**CRITICAL: Dual Audience Writing**
+## Critical Framework: Dual Audience Balance
 
-The documentation must serve **TWO audiences simultaneously**:
+**MANDATORY:** Your documentation must serve **TWO audiences simultaneously** without compromise:
 
-1. **Technical Readers** (Developers, Technical QA):
-   - Need technical details: architecture, APIs, code structure, implementation specifics
-   - Want to understand how things work under the hood
-   - Need code references, technical specifications, and implementation details
+### Audience 1: Non-Technical Readers (QA Testers, Product Managers, Stakeholders)
+**Needs:**
+- Plain language explanations of what changed
+- Step-by-step user flows and behaviors
+- Clear testing instructions (no technical knowledge required)
+- Business impact and user experience changes
+- Expected outcomes in user-visible terms
 
-2. **Non-Technical Readers** (QA Testers, Product Managers, Business Stakeholders):
-   - Need plain language explanations of what the feature does
-   - Want to understand user flows, business logic, and expected behaviors
-   - Need step-by-step guides without technical jargon
+### Audience 2: Technical Readers (Developers, Technical QA, Architects)
+**Needs:**
+- Technical implementation details and architecture changes
+- Code structure modifications and new components
+- API changes and interface updates
+- Performance implications and technical constraints
+- Implementation references and code locations
 
-**Writing Strategy:**
-- **For every technical concept**: Provide BOTH the technical term AND a plain language explanation
-- **Structure**: Start with simple explanation, then provide technical details
-- **Format**: Use "What it is" (simple) → "How it works" (technical) pattern
-- **Examples**: Show both user-facing behavior and technical implementation
-- **Avoid**: Assuming readers know technical terms - always explain them first
-- **Balance**: Include technical details for developers, but explain them in ways non-technical readers can understand
+### Writing Strategy (MANDATORY)
+- **Every Technical Concept**: Plain language explanation FIRST, then technical details
+- **Structure Pattern**: "What it does" (user view) → "How it works" (technical view)
+- **Balance Principle**: Technical depth without sacrificing accessibility
+- **Terminology Rule**: Never use technical terms without plain language explanation
+- **Format Standard**: Simple explanation → Technical implementation
 
-## Feature Analysis (CRITICAL FIRST STEP)
+## Analysis Framework (CRITICAL FIRST PHASE)
 
-**Before generating documentation, you MUST carefully analyze the relationship between the feature name and the code changes:**
+**IMPORTANT:** Spend significant time on analysis before documentation generation.
 
-1. **Feature Name Analysis:**
-   - Break down the feature name: What does "${promptFeatureName}" mean?
-   - Identify key concepts, components, or functionality implied by the name
-   - Consider synonyms, related terms, and domain-specific meanings
+### Phase 1: Feature Context Analysis
+1. **Feature Name Deconstruction**
+   - Break down "${promptFeatureName}": What functionality does this represent?
+   - Identify core concepts, user benefits, and business value
+   - Consider user perspective: What problem does this solve?
+   - Map feature name to expected user outcomes
 
-2. **Code Changes Analysis:**
-   - Thoroughly examine the git diff to identify:
-     - New files, functions, classes, or modules
-     - Modified functions, APIs, or behaviors
-     - Deleted code or deprecated features
-     - Configuration changes, dependencies, or integrations
-     - Test files and their implications
+2. **Code Changes Overview**
+   - **Diff Analysis**: Scan entire diff for patterns and changes
+   - **Change Categories**: Identify new features, modifications, bug fixes, refactoring
+   - **Scope Assessment**: Determine breadth and depth of changes
+   - **Impact Evaluation**: Assess potential user and system impact
 
-3. **Feature-Code Mapping:**
-   - **Map the feature name to specific code changes**: Which parts of the diff relate to "${promptFeatureName}"?
-   - Look for:
-     - File/folder names that match feature concepts
-     - Function/class names related to the feature
-     - Comments, commit messages, or documentation strings mentioning the feature
-     - API endpoints, routes, or interfaces related to the feature
-     - Database schema changes, migrations, or data models
-   - Identify **direct connections** (explicit mentions) and **indirect connections** (related functionality)
+### Phase 2: Code-to-Feature Mapping
+1. **Direct Mapping**
+   - Find explicit references to "${promptFeatureName}" in code
+   - Identify files, functions, classes named after feature concepts
+   - Locate comments, commit messages, documentation strings
+   - Map UI changes to user-facing functionality
 
-4. **Contextual Understanding:**
-   - Understand how the feature fits into the broader system
-   - Identify dependencies and integration points
-   - Recognize patterns and architectural decisions
+2. **Indirect Mapping**
+   - Identify supporting code that enables the feature
+   - Find configuration changes and environment updates
+   - Locate test additions and validation logic
+   - Discover integration points and API modifications
 
-5. **Validation:**
-   - Verify that the code changes actually implement or modify "${promptFeatureName}"
-   - If the connection is unclear, note this in the documentation
-   - If multiple features are present, focus on the one specified
+3. **Architecture Impact**
+   - Understand how changes fit into overall system design
+   - Identify new dependencies and external integrations
+   - Assess performance implications and scalability changes
+   - Evaluate security and compliance impacts
 
-**Take your time with this analysis** - spend significant effort understanding the relationship between the feature name and code changes before proceeding to documentation generation.
+### Phase 3: Validation & Gap Analysis
+- **Completeness Check**: Does code fully implement "${promptFeatureName}"?
+- **Gap Identification**: What's missing between feature requirements and implementation?
+- **Assumption Documentation**: Note any unclear or assumed functionality
+- **Risk Assessment**: Identify potential issues or edge cases
 
-### Documentation Requirements
+**Quality Gate:** Do not proceed until you have clear feature-to-code mapping.
 
-**CRITICAL: Each section must balance technical accuracy with accessibility**
+## Documentation Structure & Requirements
 
-1. **Overview**
-   - **Plain Language**: What does this feature do? (explain like talking to a non-technical person)
-   - **Technical Summary**: What code changes were made? (for technical readers)
-   - **Purpose & Goals**: Why was this feature built? What problem does it solve?
-   - **Expected Outcomes**: What should users/QA expect to see?
-   - **Format**: Start with simple explanation, then provide technical details
+### 1. Overview Section (MANDATORY)
+**Dual Perspective Approach:**
+- **User Impact**: What changes for users? What new capabilities? (Plain language)
+- **Technical Changes**: What code was modified/added? (Technical details)
+- **Business Value**: Why were these changes made? What problems solved?
+- **Scope & Impact**: What's included? What's the expected user/system impact?
 
-2. **Feature Flow / User Journey**
-   - **User Perspective**: Step-by-step flow from user's point of view (no technical jargon)
-   - **Technical Flow**: How the system processes each step (for technical readers)
-   - **Pre/Post Conditions**: What must be true before/after each step (explain in plain terms)
-   - **Expected Behavior**: What should happen at each step (both user-visible and system-level)
-   - **Visual Suggestions**: Flow diagrams, sequence diagrams for complex flows
-   - **Code References**: Link to specific files/functions for technical readers
+### 2. Feature Implementation & User Journey
+**Structure each user flow as:**
+- **User Experience**: Step-by-step user interactions (plain language)
+- **System Behavior**: How system responds (user-visible outcomes)
+- **Technical Flow**: Code execution path and processing (technical details)
+- **Pre/Post Conditions**: Requirements and expected states
+- **Validation Points**: What QA should verify at each step
 
-3. **Technical Details** (Balance: Technical accuracy + Plain explanations)
-   - **Architecture**: Explain system design in simple terms first, then provide technical details
-   - **Key Modules**: What each module does (plain language) → How it's implemented (technical)
-   - **Dependencies**: What external systems/services are used and why (explain business impact)
-   - **APIs/Interfaces**: What they do (simple) → Technical specifications (detailed)
-   - **Data Flow**: How data moves through the system (explain in user terms, then technical)
-   - **Validations & Constraints**: What rules exist (plain language) → Technical implementation
-   - **Performance**: What performance characteristics matter (business impact) → Technical metrics
+**Include:**
+- New user workflows enabled by changes
+- Modified existing workflows
+- Edge cases and error scenarios
+- Performance expectations and user experience impact
 
-4. **QA & Testing Guide** (Focus on actionable, understandable steps)
-   - **Test Scenarios**: 
-     - Plain language description of what to test
-     - Step-by-step instructions (no technical knowledge required)
-     - Expected results in user-visible terms
-     - Technical validation points (for technical QA)
-   - **Happy Path**: What should work normally (explain in user terms)
-   - **Edge Cases**: Unusual scenarios to test (explain why they matter)
-   - **Error Handling**: 
-     - What errors users might see (plain language)
-     - When/why errors occur (simple explanation)
-     - How to reproduce (step-by-step, no code required)
-     - Technical error codes/details (for developers)
-   - **Integration Points**: What to check (plain language) → Technical details
-   - **Regression Testing**: What existing features might be affected (explain impact)
+### 3. Technical Implementation Details
+**Balance accessibility with technical accuracy:**
 
-5. **Usage & Examples**
-   - **User Examples**: Real-world scenarios showing how to use the feature (no code)
-   - **Technical Examples**: Code snippets with detailed comments explaining what each part does
-   - **Before/After**: Show what changed (user-visible) → Technical implementation changes
-   - **Common Patterns**: How developers typically use this (technical) → What users experience (simple)
+**Architecture Changes:**
+- **High-Level Design**: System changes overview (simple) → Detailed architecture (technical)
+- **Component Changes**: New/modified modules (purpose first) → Implementation details (technical)
+- **Integration Points**: External systems involved (business impact) → Technical interfaces (specifications)
 
-### Formatting Guidelines
+**Code Changes Breakdown:**
+- **File-by-File Analysis**: Key changes and their purposes
+- **Function/API Changes**: New/modified interfaces with usage examples
+- **Data Structure Changes**: Schema modifications and data flow impacts
+- **Configuration Updates**: Environment and setting changes
 
-- Use clear markdown with code blocks, tables, and nested lists for structured information
-- Suggest diagrams/visuals for complex flows
-- Include frontmatter for Confluence:
-  \`\`\`yaml
-  ---
-  connie-publish: true
-  title: "${promptFeatureName}"
-  ---
-  \`\`\`
+**Performance & Scalability:**
+- **User Experience**: How performance changes affect users (plain)
+- **Technical Metrics**: Performance implications and benchmarks (technical)
+- **Optimization Changes**: Performance improvements and their business impact
 
-### Output
+### 4. QA & Testing Strategy (CRITICAL FOR QA AUDIENCE)
+**Make testing instructions actionable for non-technical QA:**
 
-**Important Constraint:** The documentation must be **less than 2000 lines**. Keep it comprehensive yet concise, focusing on essential information.
+**Test Scenario Structure:**
+- **Scenario Name**: Clear description of what to test (plain language)
+- **Prerequisites**: Setup required (step-by-step, no technical knowledge)
+- **Test Steps**: Numbered actions (user-facing instructions)
+- **Expected Results**: What should happen (user-visible outcomes)
+- **Technical Validation**: Additional checks (for technical QA)
+- **Edge Cases**: Boundary conditions and unusual scenarios
 
-**Note:** If the git diff is very large (100+ commits), it will be truncated to fit within API context limits (~2M characters). The truncation keeps the **most recent changes** (end of diff) as they are most relevant for documentation. Older changes may be removed, but focus on analyzing the latest code changes shown.
+**Required Test Categories:**
+- **Happy Path Testing**: Normal usage scenarios (primary user flows)
+- **Negative Testing**: Error conditions and failure modes
+- **Edge Case Testing**: Boundary conditions and unusual inputs
+- **Integration Testing**: How feature works with other system parts
+- **Regression Testing**: Impact on existing functionality
+- **Performance Testing**: User experience under different conditions
 
-**Documentation Standards:**
+**Error Scenario Documentation:**
+- **Error Conditions**: When/why errors occur (plain explanations)
+- **User Experience**: What users see when errors happen
+- **Reproduction Steps**: How to trigger errors (step-by-step)
+- **Technical Details**: Error codes, stack traces, debugging info (technical)
 
-The documentation must be:
-- **Accessible**: Non-technical readers (QA testers, product managers) can understand what the feature does and how to test it
-- **Technically Accurate**: Developers can understand implementation details, architecture, and code structure
-- **Balanced**: Each section serves both audiences - simple explanations followed by technical details
-- **Professional**: Well-structured, clear, and comprehensive
-- **QA-Friendly**: Focus on testable behaviors, validation points, and edge cases
-- **Comprehensive yet Concise**: Cover all important aspects without being overwhelming
-- **Terminology**: Every technical term explained in plain language first, then technical details provided
-- **Format**: Follow AGENT.md style guide and include Confluence frontmatter
+### 5. Implementation Examples & Usage
+**User Examples:**
+- Real-world scenarios showing new functionality
+- Before/after comparisons (what changed for users)
+- Common use cases and user workflows
 
-**Remember**: A QA tester who doesn't know code should be able to read this and understand how to test the feature. A developer should be able to read the same document and understand how it's implemented. Both audiences reading the same document.
+**Technical Examples:**
+- Code snippets with detailed explanatory comments
+- API usage examples with request/response samples
+- Configuration examples and setup instructions
 
-## Code Changes Analysis
+## Quality Standards & Validation
+
+### Content Quality Requirements
+- **Accessibility**: Non-technical reader can understand changes and testing
+- **Technical Accuracy**: Developer can understand implementation changes
+- **Completeness**: All significant changes documented
+- **Balance**: Technical details explained accessibly
+- **Actionability**: QA can execute tests without technical knowledge
+
+### Format & Structure Requirements
+- **Markdown**: Clean, structured formatting with headers and lists
+- **Confluence Frontmatter**: Publishing metadata included
+- **Code References**: Link to specific files, functions, commits
+- **Visual Elements**: Diagrams for complex flows and architectures
+- **Tables**: Structured comparison of changes and test scenarios
+
+## Output Specifications
+
+**Format:** Professional markdown documentation
+**Length Limit:** < 2000 lines (prioritize essential information)
+**Style Guide:** Follow AGENT.md standards and project conventions
+
+**Confluence Frontmatter (MANDATORY):**
+\`\`\`yaml
+---
+connie-publish: true
+title: "${promptFeatureName}"
+tags: documentation, qa, feature-update, ${promptFeatureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}
+---
+\`\`\`
+
+## Execution Process
+
+### Phase 1: Deep Code Analysis (Most Critical)
+1. **Diff Analysis**: Thoroughly examine all code changes
+2. **Feature Mapping**: Map code changes to "${promptFeatureName}" functionality
+3. **Architecture Understanding**: Understand system impact and integration points
+4. **Gap Analysis**: Identify what's implemented vs. what's expected
+
+### Phase 2: Documentation Planning
+1. **Audience Analysis**: Plan content structure for dual audiences
+2. **Content Mapping**: Organize findings into documentation sections
+3. **Technical Balance**: Ensure accessibility without losing technical depth
+4. **QA Focus**: Design actionable testing scenarios
+
+### Phase 3: Content Generation
+1. **Overview Writing**: Create dual-perspective overview section
+2. **Flow Documentation**: Document user journeys and technical flows
+3. **Technical Details**: Provide implementation details with explanations
+4. **QA Scenarios**: Create comprehensive testing instructions
+5. **Examples**: Include practical usage examples
+
+### Phase 4: Quality Validation
+1. **Dual Audience Testing**:
+   - Can non-technical QA understand what changed and how to test?
+   - Can developers understand technical implementation changes?
+2. **Technical Term Check**: Every term explained in plain language
+3. **Balance Validation**: Content serves both audiences effectively
+4. **Completeness Check**: All significant changes documented
+5. **Length Compliance**: Stay within line limits
+
+### Phase 5: Finalization
+1. **Format Review**: Ensure proper markdown and frontmatter
+2. **Content Polish**: Professional editing and clarity improvements
+3. **Structure Validation**: Follow AGENT.md standards
+4. **Final Quality Check**: Meets all requirements and standards
+
+## Code Changes Reference
+
+**Analysis Basis:** Git diff (${diffTruncated ? `truncated to 2M characters, most recent changes preserved` : `full diff`})
 
 --- CODE CHANGES (Last 100 commits) ---
 
-${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed) to ensure latest code is analyzed for documentation.\n\n` : ""}${diff}
+${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed) to ensure latest, most relevant code is analyzed for documentation.\n\n` : ""}${diff}
 
 ---
 
-## Instructions
+## Validation & Quality Assurance Framework
 
-**Step-by-Step Process (Take your time with each step):**
+### Pre-Analysis Validation
+**Before processing code changes:**
 
-1. **Feature-Code Analysis (MOST IMPORTANT):**
-   - Carefully analyze the feature name "${promptFeatureName}" and its meaning
-   - Thoroughly examine the git diff to find code changes related to this feature
-   - Map specific code changes (files, functions, classes) to the feature name
-   - Identify direct and indirect connections between feature name and code
-   - Spend significant time understanding this relationship before proceeding
+1. **Diff Quality Assessment**
+   - Verify diff contains relevant code changes
+   - Check for truncated content and assess impact
+   - Validate diff represents actual "${promptFeatureName}" implementation
 
-2. **Project Context Review:**
-   - Review project context (AGENT.md, README.md) to understand project standards
-   - Understand how this feature fits into the overall architecture
+2. **Context Readiness Check**
+   - Ensure AGENT.md standards are available
+   - Validate project context information
+   - Confirm Gemini API access and capabilities
 
-3. **Documentation Generation:**
-   - Generate QA-focused documentation following requirements above
-   - Ensure all documentation is directly related to "${promptFeatureName}" and the code changes you identified
-   - Focus on the specific feature, not unrelated code changes
+3. **Scope Validation**
+   - Assess whether diff scope matches "${promptFeatureName}"
+   - Identify if changes are feature-complete or partial
+   - Document any scope limitations
 
-4. **Quality Checks:**
-   - **Dual Audience Test:** 
-     - Can a non-technical QA tester understand what the feature does and how to test it?
-     - Can a developer understand the technical implementation and architecture?
-     - Both audiences should be able to read the same document and get what they need
-   - **Technical Term Check:** Every technical term must have a plain language explanation nearby
-   - **Balance Check:** Ensure technical details are present but explained accessibly
-   - **Validate relevance:** Ensure all content relates to "${promptFeatureName}" - remove or minimize unrelated information
-   - **Validate readability:** Ask "Can someone with zero technical knowledge understand what this feature does and how to test it?"
-   - **Respect line limit:** Ensure the final documentation is **less than 2000 lines** - prioritize essential information and be concise
+### Real-time Validation Methods
 
-5. **Finalization:**
-   - Follow AGENT.md style guide and include Confluence frontmatter
-   - Ensure the feature name "${promptFeatureName}" is accurately reflected throughout the documentation
+**During analysis and generation:**
 
-**CRITICAL:** Do not rush. Take time to deeply understand the relationship between "${promptFeatureName}" and the code changes before generating documentation. Quality analysis leads to quality documentation.
+1. **Code Change Relevance Testing**
+   - **Direct Relevance**: Does each change relate to "${promptFeatureName}"?
+   - **Indirect Relevance**: Does change support or enable the feature?
+   - **Noise Filtering**: Identify and exclude unrelated changes
 
-**Ready to generate documentation. Please proceed with careful analysis and documentation creation.**`
+2. **Dual Audience Content Validation**
+   - **Accessibility Check**: Can non-technical readers understand changes?
+   - **Technical Depth Check**: Do developers get implementation details?
+   - **Balance Assessment**: Both audiences served by same content?
+
+3. **Technical Accuracy Validation**
+   - **Implementation Match**: Documentation reflects actual code changes?
+   - **Architecture Alignment**: Changes understood in system context?
+   - **Dependency Awareness**: Related system impacts identified?
+
+### Post-Generation Quality Controls
+
+**Final validation before output:**
+
+1. **Content Completeness Audit**
+   - All significant code changes documented?
+   - User impact clearly explained?
+   - Technical implementation details accurate?
+
+2. **QA Testing Validation**
+   - Test scenarios cover all change types?
+   - Instructions actionable for non-technical QA?
+   - Edge cases and error conditions documented?
+
+3. **Format & Standards Compliance**
+   - Confluence frontmatter properly formatted?
+   - Markdown structure clean and consistent?
+   - Length within specified limits?
+
+### Automated Quality Checklist
+
+**Use this checklist to validate final documentation:**
+
+- [ ] Code changes accurately analyzed and categorized
+- [ ] Feature-code mapping clear and comprehensive
+- [ ] User impact explained in plain language
+- [ ] Technical implementation details correct
+- [ ] QA testing scenarios actionable and complete
+- [ ] Error handling and edge cases documented
+- [ ] Both audiences satisfied by content balance
+- [ ] Confluence frontmatter includes proper metadata
+- [ ] Length constraint met (< 2000 lines)
+- [ ] AGENT.md style guide followed
+- [ ] No unexplained technical terminology
+- [ ] Code references accurate and specific
+
+## Critical Success Factors
+
+### Analysis Excellence
+- **Thorough Code Review**: Every line of diff analyzed for relevance
+- **Accurate Mapping**: Clear connection between code changes and feature
+- **Context Understanding**: Changes understood in broader system context
+- **Gap Recognition**: Missing functionality identified and noted
+
+### Content Quality
+- **Dual Audience Success**: Both readers get value from same document
+- **Technical Accuracy**: Implementation details correct and complete
+- **QA Actionability**: Testing instructions clear and executable
+- **Professional Standard**: Well-written, well-structured, error-free
+
+### Process Discipline
+- **Phase Completion**: Each phase completed before moving to next
+- **Quality Gates**: All validation checkpoints passed
+- **Standards Adherence**: AGENT.md and project standards followed
+- **Efficiency**: Comprehensive yet concise within length limits
+
+**CRITICAL REMINDER:** Quality analysis produces quality documentation. Invest time in understanding the relationship between "${promptFeatureName}" and the code changes. Your analysis quality directly determines documentation quality.
+
+**Ready to begin comprehensive code change analysis and documentation generation for "${promptFeatureName}".**`
 
     // Use retry logic for API calls to handle rate limiting
     const maxRetries = options.maxRetries || 3
