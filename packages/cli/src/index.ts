@@ -1288,234 +1288,74 @@ async function handleGenerateDocs(options: any) {
       }
     }
 
-    // Gather comprehensive project context
-    const projectContext = await gatherProjectContext()
+    // Note: Project context gathering removed to simplify prompt
 
     // Generate documentation
     const generateSpinner = ora("Generating documentation...").start()
 
     const promptFeatureName = options.feature || "Feature Name"
 
-    const prompt = `# Comprehensive Feature Documentation Generation
+    const prompt = `# Generate Documentation from Code Changes
 
-You are a **Senior Technical Documentation Engineer** specializing in creating detailed, actionable documentation from code changes. You excel at transforming git diffs into comprehensive feature documentation that serves both technical and non-technical audiences.
+**TASK:** Analyze the git diff below and create comprehensive documentation for "${promptFeatureName}".
 
-## Core Expertise
+**REQUIREMENTS:**
+- Extract SPECIFIC details from the actual code changes in the diff
+- Document REAL files, functions, and code snippets that changed
+- Map code changes to user-facing features and business impact
+- Create actionable QA test scenarios based on actual code logic
+- NO placeholders - use real details from the diff only
 
-You are an expert in:
-- **Code Change Analysis**: Deep analysis of git diffs to understand feature implementations
-- **Feature-to-Code Mapping**: Connecting user-facing features to specific code changes
-- **Technical Documentation**: Creating accurate, detailed technical specifications
-- **QA-Focused Testing**: Writing actionable test scenarios with clear validation points
-- **Dual-Audience Writing**: Documentation that serves developers AND QA testers simultaneously
-
-## Available Context
-
-You have access to:
-- **Code Changes**: Git diff (${diffTruncated ? `truncated from ${originalDiffLength.toLocaleString()} to 2M characters` : `full ${diff.length.toLocaleString()} characters`})
-- **Project Standards**: AGENT.md guidelines and development practices
-- **Project Context**: Overall architecture and existing codebase patterns
-
-${projectContext ? `## Project Context\n\n${projectContext}\n` : ""}
-
-## PRIMARY TASK
-
-**Analyze the code changes and generate comprehensive, SPECIFIC documentation for "${promptFeatureName}" - NOT a template with placeholders, but COMPLETE documentation with real details from the code.**
-
-**CRITICAL REQUIREMENT:** Your output must be SPECIFIC documentation filled with actual details from the code changes, NOT a generic template with [FILL IN] placeholders.
-
-## Analysis Process (MANDATORY FIRST STEP)
-
-### Step 1: Deep Code Analysis
-**Spend significant time analyzing the diff thoroughly:**
-
-1. **Identify Core Changes**
-   - What files were modified/added/deleted?
-   - What functions, classes, or components were changed?
-   - What APIs or interfaces were modified?
-
-2. **Understand Feature Implementation**
-   - How does the code implement "${promptFeatureName}"?
-   - What user-facing functionality does this code enable?
-   - What business logic or user workflows are affected?
-
-3. **Map Technical Changes to User Impact**
-   - How do code changes translate to user-visible features?
-   - What UI changes result from these code modifications?
-   - How does this affect user workflows or system behavior?
-
-### Step 2: Feature Context Understanding
-**Before writing ANY documentation, understand:**
-- What problem does "${promptFeatureName}" solve for users?
-- How does the code changes address this problem?
-- What are the key user benefits and technical improvements?
-
-### Step 3: Documentation Planning
-**Plan SPECIFIC content based on actual code findings:**
-- Extract real examples from the diff (not placeholders)
-- Identify actual user flows affected by changes
-- Create specific test scenarios based on code functionality
-
-## Documentation Structure (COMPLETE CONTENT REQUIRED)
-
-### 1. Overview Section
-**MANDATORY: Write SPECIFIC content based on code analysis:**
-
-**User Perspective (Plain Language):**
-- What can users now do that they couldn't before?
-- How does this change their experience?
-- What problems are solved?
-
-**Business Perspective:**
-- What business goals does this achieve?
-- What value does this add to the product?
-- How does this impact user engagement/retention?
-
-**Technical Perspective:**
-- What code was changed and why?
-- What architecture or patterns were modified?
-- What technical improvements were made?
-
-### 2. Feature Flow & User Journey
-**MANDATORY: Document ACTUAL user flows based on code changes:**
-
-For EACH major user flow affected by the code changes:
-
-**User Experience:**
-- Step-by-step actions users take (based on actual UI code changes)
-- Expected user interactions and feedback
-
-**System Behavior:**
-- How the system responds (based on actual code logic)
-- What users see happen (animations, messages, state changes)
-
-**Technical Implementation:**
-- Which files/functions handle each step
-- Key code logic for each user action
-- Data flow and state management
-
-**Validation Points:**
-- What QA should check at each step
-- Expected outcomes and error conditions
-
-### 3. Technical Implementation Details
-**MANDATORY: Provide SPECIFIC technical details from the code:**
-
-**Code Changes Breakdown:**
-- List ACTUAL files changed with specific changes
-- Show REAL code snippets (not placeholders)
-- Explain WHAT each change does and WHY
-
-**Architecture Impact:**
-- How does this fit into the overall system?
-- What dependencies or integrations were affected?
-- Performance implications of the changes
-
-**API/Data Changes:**
-- What APIs were modified or added?
-- What data structures changed?
-- Database schema modifications?
-
-### 4. QA & Testing Guide
-**MANDATORY: Create ACTIONABLE test scenarios based on actual code:**
-
-**Happy Path Scenarios:**
-- Primary user flows that should work after changes
-- Step-by-step test instructions (non-technical)
-- Expected results based on code logic
-
-**Error & Edge Cases:**
-- Error conditions the code handles
-- Boundary conditions and edge cases
-- Failure scenarios and error messages
-
-**Integration Testing:**
-- How this feature interacts with other system parts
-- Cross-browser/device compatibility
-- Performance and load testing requirements
-
-**Technical Validation:**
-- API response validation
-- State management verification
-- Performance metrics to check
-
-### 5. Usage Examples & Configuration
-**MANDATORY: Provide REAL examples from the codebase:**
-
-**Code Examples:**
-- Actual code snippets showing how to use new functionality
-- Configuration examples from the code changes
-- API usage examples with real endpoints
-
-**User Scenarios:**
-- Real-world examples of how users interact with the feature
-- Before/after comparisons showing the changes
-
-## Quality Requirements
-
-### Content Standards
-- **NO PLACEHOLDERS**: Every [FILL IN] must be replaced with actual content
-- **SPECIFIC DETAILS**: Use real file names, function names, code snippets
-- **COMPLETE COVERAGE**: Document all significant changes in the diff
-- **ACCURATE MAPPING**: Clear connection between code changes and user features
-
-### Technical Accuracy
-- **Code References**: Point to actual files and functions from the diff
-- **Implementation Details**: Reflect actual code logic and architecture
-- **API Specifications**: Document real endpoints and data structures
-
-### QA Actionability
-- **Testable Scenarios**: QA can execute tests without technical knowledge
-- **Clear Validation**: Specific expected results and error conditions
-- **Complete Coverage**: Test scenarios for all major functionality
-
-## Output Format
-
-**Format:** Complete markdown documentation with Confluence frontmatter
-**Length:** Comprehensive but focused (< 2000 lines)
-**Style:** Professional, clear, accessible to both audiences
-
-**Confluence Frontmatter:**
+**OUTPUT STRUCTURE:**
 \`\`\`yaml
 ---
 connie-publish: true
 title: "${promptFeatureName}"
 tags: documentation, qa, feature-update, ${promptFeatureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}
-connie-page-id: 'AUTO_GENERATED'
 ---
+
+## Overview
+
+### User Perspective
+[What users can now do based on actual code changes]
+
+### Business Perspective
+[Business goals achieved by these specific changes]
+
+### Technical Perspective
+[What code was actually changed and why]
+
+## Feature Flow & User Journey
+
+[Document actual user flows affected by the code changes with specific validation points]
+
+## Technical Implementation Details
+
+[Specific code changes from the diff with real file names and snippets]
+
+## QA & Testing Guide
+
+[Actionable test scenarios based on actual code logic, not generic templates]
+
+## Usage Examples & Configuration
+
+[Real code examples from the changes]
 \`\`\`
 
-## Execution Guidelines
+---
 
-### Phase 1: Code Analysis (Spend most time here)
-1. **Read the entire diff carefully**
-2. **Identify all changed files and functions**
-3. **Understand the feature implementation**
-4. **Map code changes to user-facing functionality**
-
-### Phase 2: Content Generation
-1. **Write specific overview based on actual code**
-2. **Document real user flows from the changes**
-3. **Provide actual technical implementation details**
-4. **Create actionable QA scenarios**
-
-### Phase 3: Quality Validation
-1. **Check for placeholders** - Replace ALL with real content
-2. **Verify technical accuracy** - Matches actual code changes
-3. **Ensure QA actionability** - Tests can be executed
-4. **Validate completeness** - All major changes documented
-
-## Code Changes Analysis
-
-**IMPORTANT:** Base your documentation on this actual diff content. Extract real examples, file names, and implementation details from the code changes below.
-
---- CODE CHANGES ---
+**CODE CHANGES TO ANALYZE:**
 
 ${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed).\n\n` : ""}${diff}
 
 ---
 
-**CRITICAL:** Generate COMPLETE, SPECIFIC documentation with real details from the code changes above. No placeholders, no generic templates. Create documentation that developers and QA can immediately use to understand and test "${promptFeatureName}".`
+**INSTRUCTIONS:**
+1. Read the entire diff carefully and identify specific changes
+2. Map code changes to user-facing functionality
+3. Write documentation using real details from the code
+4. Create testable QA scenarios based on actual code logic
+5. Focus on what changed, not hypothetical examples`
 
     // Use retry logic for API calls to handle rate limiting
     const maxRetries = options.maxRetries || 3
