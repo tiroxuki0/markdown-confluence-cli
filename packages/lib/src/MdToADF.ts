@@ -160,7 +160,7 @@ function processADF(adf: JSONDocNode, confluenceBaseUrl: string, filenameToPageI
       ) {
         // Try to resolve filename to page ID URL first
         const resolvedUrl = resolveFilenameToPageUrl(href, confluenceBaseUrl, filenameToPageIdMap, filenameToSpaceKeyMap);
-        console.log('resolvedUrl',resolvedUrl)
+
         if (resolvedUrl) {
           href = resolvedUrl;
           node.marks[0].attrs["href"] = href;

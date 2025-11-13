@@ -22,11 +22,17 @@ function buildFilenameToPageIdMap(files: MarkdownFile[], commonPath: string): Ma
       if (pageId !== undefined && pageId !== null) {
         const pageIdStr = String(pageId).trim();
         if (pageIdStr) {
-          // For nested files, use relative path from common root as key
+              // For nested files, use relative path from common root as key
           // This allows cross-references like mobile_app/index.md to resolve
           const relativePath = path.relative(commonPath, file.absoluteFilePath);
           const filename = path.join(path.dirname(relativePath), path.basename(file.fileName, '.md'));
           mapping.set(filename, pageIdStr);
+
+          // Also add just the basename as key for backward compatibility
+          const basename = path.basename(file.fileName, '.md');
+          if (basename !== filename) {
+            mapping.set(basename, pageIdStr);
+          }
         }
       }
     } catch (error) {
@@ -55,6 +61,12 @@ function buildFilenameToSpaceKeyMap(files: MarkdownFile[], commonPath: string): 
           const relativePath = path.relative(commonPath, file.absoluteFilePath);
           const filename = path.join(path.dirname(relativePath), path.basename(file.fileName, '.md'));
           mapping.set(filename, spaceKeyStr);
+
+          // Also add just the basename as key for backward compatibility
+          const basename = path.basename(file.fileName, '.md');
+          if (basename !== filename) {
+            mapping.set(basename, spaceKeyStr);
+          }
         }
       }
     } catch (error) {
