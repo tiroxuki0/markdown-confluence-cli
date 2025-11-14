@@ -1293,18 +1293,17 @@ async function handleGenerateDocs(options: any) {
 
     const promptFeatureName = options.feature || "Feature Name"
 
-    const prompt = `# Generate Documentation from Code Changes
+    const prompt = `## TASK
+Analyze this git diff and create documentation for the "${promptFeatureName}" feature.
 
-**TASK:** Analyze the git diff below and create comprehensive documentation for "${promptFeatureName}".
+## REQUIREMENTS
+- Extract specific details from the actual code changes
+- Document real files, functions, and code snippets that changed
+- Map code changes to user-facing features
+- Create actionable QA test scenarios
+- NO placeholders - use real details from the diff
 
-**REQUIREMENTS:**
-- Extract SPECIFIC details from the actual code changes in the diff
-- Document REAL files, functions, and code snippets that changed
-- Map code changes to user-facing features and business impact
-- Create actionable QA test scenarios based on actual code logic
-- NO placeholders - use real details from the diff only
-
-**OUTPUT FORMAT:**
+## OUTPUT FORMAT
 \`\`\`yaml
 ---
 connie-publish: true
@@ -1313,47 +1312,30 @@ tags: documentation, qa, feature-update, ${promptFeatureName.toLowerCase().repla
 ---
 
 ## Overview
-
-### User Perspective
-[What users can now do based on actual code changes]
-
-### Business Perspective
-[Business goals achieved by these specific changes]
-
-### Technical Perspective
-[What code was actually changed and why]
+[What users can now do + business value + technical changes]
 
 ## Feature Flow & User Journey
-
-[Document actual user flows affected by the code changes with specific validation points]
+[Actual user flows affected by code changes]
 
 ## Technical Implementation Details
-
-[Specific code changes from the diff with real file names and snippets]
+[Real code changes from diff with file names and snippets]
 
 ## QA & Testing Guide
-
-[Actionable test scenarios based on actual code logic, not generic templates]
+[Actionable test scenarios based on actual code logic]
 
 ## Usage Examples & Configuration
-
-[Real code examples from the changes]
+[Real examples from the code changes]
 \`\`\`
 
 ---
 
-**CODE CHANGES TO ANALYZE:**
+## CODE CHANGES TO ANALYZE
 
 ${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed).\n\n` : ""}${diff}
 
 ---
 
-**INSTRUCTIONS:**
-1. Read the entire diff carefully and identify specific changes
-2. Map code changes to user-facing functionality
-3. Write documentation using real details from the code
-4. Create testable QA scenarios based on actual code logic
-5. Focus on what changed, not hypothetical examples`
+**Ready to begin comprehensive code change analysis and documentation generation for "${promptFeatureName}".**`
 
     // Use retry logic for API calls to handle rate limiting
     const maxRetries = options.maxRetries || 3
@@ -1366,7 +1348,7 @@ ${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLo
           messages: [
             {
               role: "system",
-              content: "You are a technical documentation specialist. Your task is to analyze git diff changes and create comprehensive, specific documentation. Extract real details from the code changes - no placeholders. Focus only on actual files, functions, and code snippets that changed."
+              content: "You are an expert technical documentation specialist focused on creating QA-friendly documentation for DUAL AUDIENCES: technical readers (developers) and non-technical readers (QA testers, product managers). CRITICAL: Before generating documentation, you MUST carefully analyze the relationship between the feature name and code changes. Spend significant time understanding how the feature name maps to specific code changes, files, functions, and implementations. Only after thorough analysis should you generate documentation. BALANCE IS KEY: Include technical details for developers, but explain everything in ways non-technical readers can understand. For every technical concept, provide BOTH a plain language explanation AND technical details. Structure: simple explanation first, then technical depth. Both audiences should be able to read the same document and get what they need. Do not rush - quality analysis leads to quality documentation."
             },
             { role: "user", content: prompt }
           ]
