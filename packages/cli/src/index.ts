@@ -1341,25 +1341,86 @@ ${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLo
     const maxRetries = options.maxRetries || 3
     const retryDelay = options.retryDelay || 3000
 
-    const response = await retryWithBackoff(
-      () =>
-        openai.chat.completions.create({
-          model: options.model || "gemini-2.0-flash",
-          messages: [
-            {
-              role: "system",
-              content: "You are an expert technical documentation specialist focused on creating QA-friendly documentation for DUAL AUDIENCES: technical readers (developers) and non-technical readers (QA testers, product managers). CRITICAL: Before generating documentation, you MUST carefully analyze the relationship between the feature name and code changes. Spend significant time understanding how the feature name maps to specific code changes, files, functions, and implementations. Only after thorough analysis should you generate documentation. BALANCE IS KEY: Include technical details for developers, but explain everything in ways non-technical readers can understand. For every technical concept, provide BOTH a plain language explanation AND technical details. Structure: simple explanation first, then technical depth. Both audiences should be able to read the same document and get what they need. Do not rush - quality analysis leads to quality documentation."
-            },
-            { role: "user", content: prompt }
-          ]
-        }),
-      maxRetries,
-      retryDelay
-    )
+    // Debug: Log prompt before sending to AI
+    console.log('=== DEBUG: Prompt being sent to AI ===');
+    console.log('System message length:', 90, 'characters');
+    console.log('User prompt length:', prompt.length, 'characters');
+    console.log('User prompt starts with:', prompt.substring(0, 200) + '...');
+    console.log('=====================================');
 
-    let markdown = response.choices[0]?.message?.content
-    if (!markdown) {
-      throw new Error("No response from OpenAI API")
+    let markdown: string;
+
+    // For testing: Mock response to avoid API call
+    if (process.env['GEMINI_API_KEY'] === 'test_key_not_real') {
+      console.log('=== MOCK MODE: Simulating AI response ===');
+      markdown = `---
+connie-publish: true
+title: "Test Generate Docs"
+tags: documentation, qa, feature-update, test-generate-docs
+---
+
+## Overview
+
+This feature adds a test function for generate-docs testing.
+
+## Feature Flow & User Journey
+
+1. Test function is added to the codebase
+2. Generate-docs processes the code changes
+3. Documentation is generated successfully
+
+## Technical Implementation Details
+
+### File: test_generate_docs.js
+\`\`\`javascript
+console.log("Test function for generate-docs testing");
+\`\`\`
+
+**Plain Explanation:** A simple test file was added with a console.log statement.
+
+**Technical Details:** This JavaScript file contains a single console.log statement used for testing the generate-docs functionality.
+
+## QA & Testing Guide
+
+1. **Verify file creation:**
+   - Check that test_generate_docs.js exists in the root directory
+   - Verify the file contains the expected console.log statement
+
+## Usage Examples & Configuration
+
+Run the test file:
+\`\`\`bash
+node test_generate_docs.js
+\`\`\`
+
+Expected output: "Test function for generate-docs testing"`;
+
+      console.log('=== MOCK RESPONSE GENERATED ===');
+      console.log('Mock response length:', markdown.length, 'characters');
+      console.log('Mock response starts with:', markdown.substring(0, 200) + '...');
+
+      generateSpinner.succeed(chalk.green("Documentation generated successfully (MOCK)"));
+    } else {
+      const response = await retryWithBackoff(
+        () =>
+          openai.chat.completions.create({
+            model: options.model || "gemini-2.0-flash",
+            messages: [
+              {
+                role: "system",
+                content: "You are a technical documentation specialist. Analyze the provided git diff and create comprehensive documentation. Extract real details from actual code changes - no placeholders. Focus on specific files, functions, and code snippets that changed."
+              },
+              { role: "user", content: prompt }
+            ]
+          }),
+        maxRetries,
+        retryDelay
+      )
+
+      markdown = response.choices[0]?.message?.content || ''
+      if (!markdown) {
+        throw new Error("No response from OpenAI API")
+      }
     }
 
     // Clean markdown code block wrapper if AI added it
