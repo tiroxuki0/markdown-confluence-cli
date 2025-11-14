@@ -705,6 +705,25 @@ export async function retryWithBackoff<T>(operation: () => Promise<T>, maxRetrie
   throw lastError!
 }
 
+// Some Gemini responses echo the prompt/template instead of filling it out
+function responseLooksLikePrompt(content: string): boolean {
+  const normalized = content.toLowerCase()
+  const promptMarkers = [
+    "## task",
+    "## requirements",
+    "## code changes to analyze",
+    "## output format",
+    "[what users can now do + business value + technical changes]",
+    "[actual user flows affected by code changes]",
+    "[real code changes from diff with file names and snippets]",
+    "[actionable test scenarios based on actual code logic]",
+    "[real examples from the code changes]",
+    "**ready to begin comprehensive code change analysis"
+  ]
+
+  return promptMarkers.some((marker) => normalized.includes(marker))
+}
+
 // Gather comprehensive project context from multiple sources
 async function gatherProjectContext(): Promise<string> {
   const contextParts: string[] = []
@@ -1401,25 +1420,46 @@ Expected output: "Test function for generate-docs testing"`;
 
       generateSpinner.succeed(chalk.green("Documentation generated successfully (MOCK)"));
     } else {
-      const response = await retryWithBackoff(
-        () =>
-          openai.chat.completions.create({
-            model: options.model || "gemini-2.0-flash",
-            messages: [
-              {
-                role: "system",
-                content: "You are a technical documentation specialist. Analyze the provided git diff and create comprehensive documentation. Extract real details from actual code changes - no placeholders. Focus on specific files, functions, and code snippets that changed."
-              },
-              { role: "user", content: prompt }
-            ]
-          }),
-        maxRetries,
-        retryDelay
-      )
+      const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
+        role: "system",
+        content:
+          "You are a technical documentation specialist. Analyze the provided git diff and create comprehensive documentation. Extract real details from actual code changes - no placeholders. Focus on specific files, functions, and code snippets that changed."
+      }
 
-      markdown = response.choices[0]?.message?.content || ''
-      if (!markdown) {
-        throw new Error("No response from OpenAI API")
+      const requestDocumentation = async (promptContent: string) => {
+        const response = await retryWithBackoff<OpenAI.Chat.Completions.ChatCompletion>(
+          () =>
+            openai.chat.completions.create({
+              model: options.model || "gemini-2.0-flash",
+              messages: [systemMessage, { role: "user", content: promptContent }]
+            }),
+          maxRetries,
+          retryDelay
+        )
+
+        const aiContent = response.choices[0]?.message?.content || ""
+        if (!aiContent) {
+          throw new Error("No response from OpenAI API")
+        }
+
+        return aiContent
+      }
+
+      markdown = await requestDocumentation(prompt)
+
+      if (responseLooksLikePrompt(markdown)) {
+        console.log(chalk.yellow("⚠️ Gemini returned the instructions template instead of documentation. Retrying with clarification..."))
+        generateSpinner.text = "Regenerating documentation after template response..."
+
+        const clarifiedPrompt = `${prompt}
+
+IMPORTANT: The previous response simply repeated the instructions template. Provide the final documentation content now. Replace every placeholder with concrete details from the git diff and do not repeat the template.`
+
+        markdown = await requestDocumentation(clarifiedPrompt)
+
+        if (responseLooksLikePrompt(markdown)) {
+          throw new Error("Gemini returned the instructions template twice. Try narrowing the diff or rerunning the command.")
+        }
       }
     }
 
