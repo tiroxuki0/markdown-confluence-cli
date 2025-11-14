@@ -1312,18 +1312,18 @@ async function handleGenerateDocs(options: any) {
 
     const promptFeatureName = options.feature || "Feature Name"
 
-    const prompt = `## TASK
-Analyze this git diff and create documentation for the "${promptFeatureName}" feature.
+    const prompt = `You are a technical documentation specialist. Your task is to analyze git code changes and produce a COMPLETE, FILLED-OUT markdown document. 
 
-## REQUIREMENTS
-- Extract specific details from the actual code changes
-- Document real files, functions, and code snippets that changed
-- Map code changes to user-facing features
-- Create actionable QA test scenarios
-- NO placeholders - use real details from the diff
+**CRITICAL INSTRUCTIONS:**
+1. DO NOT output the template structure itself
+2. DO NOT include the placeholder text like [What users can now do...]
+3. DO NOT echo back the instructions
+4. ONLY output the FINAL filled-in markdown document
+5. Replace EVERY placeholder with REAL details from the code diff
+6. Use specific file names, function names, and code snippets from the diff
 
-## OUTPUT FORMAT
-\`\`\`yaml
+**REQUIRED OUTPUT STRUCTURE (fill in all sections):**
+
 ---
 connie-publish: true
 title: "${promptFeatureName}"
@@ -1331,43 +1331,33 @@ tags: documentation, qa, feature-update, ${promptFeatureName.toLowerCase().repla
 ---
 
 ## Overview
-[What users can now do + business value + technical changes]
+Provide: what users can now do + business value + specific technical changes from the diff
 
-## Feature Flow & User Journey
-[Actual user flows affected by code changes]
+## Feature Flow & User Journey  
+Provide: actual user flows affected by the code changes shown in diff
 
 ## Technical Implementation Details
-[Real code changes from diff with file names and snippets]
+Provide: real code changes from diff with actual file names and code snippets
 
 ## QA & Testing Guide
-[Actionable test scenarios based on actual code logic]
+Provide: actionable test scenarios based on actual code logic in the diff
 
 ## Usage Examples & Configuration
-[Real examples from the code changes]
-\`\`\`
+Provide: real examples from the code changes
 
 ---
 
-## CODE CHANGES TO ANALYZE
+**GIT DIFF TO ANALYZE:**
 
-${diffTruncated ? `\n**Note:** Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. **Most recent changes are preserved** (oldest changes removed).\n\n` : ""}${diff}
+${diffTruncated ? `\n[Note: Diff was truncated from ${originalDiffLength.toLocaleString()} to 2,000,000 characters. Most recent changes preserved.]\n\n` : ""}${diff}
 
 ---
 
-**Ready to begin comprehensive code change analysis and documentation generation for "${promptFeatureName}".**`
-
-    // Use retry logic for API calls to handle rate limiting
-    const maxRetries = options.maxRetries || 3
-    const retryDelay = options.retryDelay || 3000
-
-    // Debug: Log prompt before sending to AI
-    console.log('=== DEBUG: Prompt being sent to AI ===');
-    console.log('System message length:', 90, 'characters');
-    console.log('User prompt length:', prompt.length, 'characters');
-    console.log('User prompt starts with:', prompt.substring(0, 200) + '...');
-    console.log('=====================================');
+Now produce the FILLED-OUT markdown document with concrete details from the diff above. Do not include any template markers or placeholders.`
 
     let markdown: string;
+    let retryAttempts = 0;
+    const maxRetryAttempts = 3;
 
     // For testing: Mock response to avoid API call
     if (process.env['GEMINI_API_KEY'] === 'test_key_not_real') {
@@ -1423,18 +1413,18 @@ Expected output: "Test function for generate-docs testing"`;
       const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
         role: "system",
         content:
-          "You are a technical documentation specialist. Analyze the provided git diff and create comprehensive documentation. Extract real details from actual code changes - no placeholders. Focus on specific files, functions, and code snippets that changed."
+          "You are a technical documentation specialist. Analyze the provided git diff and create comprehensive documentation. Extract real details from actual code changes - no placeholders. Focus on specific files, functions, and code snippets that changed. Output ONLY the final filled-in markdown document, nothing else."
       }
 
-      const requestDocumentation = async (promptContent: string) => {
+      const requestDocumentation = async (promptContent: string): Promise<string> => {
         const response = await retryWithBackoff<OpenAI.Chat.Completions.ChatCompletion>(
           () =>
             openai.chat.completions.create({
               model: options.model || "gemini-2.0-flash",
               messages: [systemMessage, { role: "user", content: promptContent }]
             }),
-          maxRetries,
-          retryDelay
+          1, // Use 1 retry at API level, we handle multiple retries at prompt level
+          options.retryDelay || 3000
         )
 
         const aiContent = response.choices[0]?.message?.content || ""
@@ -1445,21 +1435,50 @@ Expected output: "Test function for generate-docs testing"`;
         return aiContent
       }
 
+      // Initial request
       markdown = await requestDocumentation(prompt)
 
-      if (responseLooksLikePrompt(markdown)) {
-        console.log(chalk.yellow("⚠️ Gemini returned the instructions template instead of documentation. Retrying with clarification..."))
-        generateSpinner.text = "Regenerating documentation after template response..."
+      // Retry loop for template response detection
+      while (responseLooksLikePrompt(markdown) && retryAttempts < maxRetryAttempts) {
+        retryAttempts++
+        console.log(
+          chalk.yellow(
+            `⚠️ Gemini returned template instead of documentation (attempt ${retryAttempts}/${maxRetryAttempts}). Retrying with stronger instructions...`
+          )
+        )
+        generateSpinner.text = `Regenerating documentation (attempt ${retryAttempts + 1}/${maxRetryAttempts + 1})...`
 
-        const clarifiedPrompt = `${prompt}
+        // Use progressively more direct prompts
+        let retryPrompt: string
+        if (retryAttempts === 1) {
+          retryPrompt = `FINAL INSTRUCTION: Output ONLY the filled markdown document below, nothing else. Replace all placeholders with real details from the diff:
 
-IMPORTANT: The previous response simply repeated the instructions template. Provide the final documentation content now. Replace every placeholder with concrete details from the git diff and do not repeat the template.`
-
-        markdown = await requestDocumentation(clarifiedPrompt)
-
-        if (responseLooksLikePrompt(markdown)) {
-          throw new Error("Gemini returned the instructions template twice. Try narrowing the diff or rerunning the command.")
+${prompt}`
+        } else if (retryAttempts === 2) {
+          retryPrompt = `CRITICAL: Stop echoing the template. Output ONLY the COMPLETED markdown document with real data from the diff. Start with --- and end after all sections are filled:\n\n${prompt}`
+        } else {
+          retryPrompt = `Generate the completed markdown now. Start directly with:\n---\nconnie-publish: true\ntitle: "${promptFeatureName}"\n\nThen complete all remaining sections using ONLY real details from the provided diff. Do NOT include template structure or instructions.`
         }
+
+        markdown = await requestDocumentation(retryPrompt)
+
+        // Add delay between retries to avoid hitting rate limits
+        if (responseLooksLikePrompt(markdown) && retryAttempts < maxRetryAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+        }
+      }
+
+      if (responseLooksLikePrompt(markdown)) {
+        throw new Error(
+          `Gemini returned the instructions template ${retryAttempts + 1} times. This suggests either:\n` +
+          `  1. The git diff is empty or too small\n` +
+          `  2. The feature name "${promptFeatureName}" is too vague\n` +
+          `  3. There's an API issue\n\n` +
+          `Try:\n` +
+          `  • Verify git history with: git log --oneline | head -20\n` +
+          `  • Use a more specific feature name\n` +
+          `  • Check if GEMINI_API_KEY is valid`
+        )
       }
     }
 
